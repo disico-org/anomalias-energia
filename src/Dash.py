@@ -118,16 +118,26 @@ def load_resultados(path_r1, path_last):
 # =========================================================
 # 3) CARGA INICIAL
 # =========================================================
+df_sup = df_unsup = df_consumo = pd.DataFrame()
+_load_errors = []
+
 try:
-    df_sup     = load_supervised(FILE_SUP)
-    df_unsup   = load_unsupervised(FILE_UNSUP)
-    df_consumo = load_consumo(FILE_CONSUMO)
-    DATA_OK    = True
-    LOAD_ERROR = ""
+    df_sup = load_supervised(FILE_SUP)
 except Exception as e:
-    df_sup = df_unsup = df_consumo = pd.DataFrame()
-    DATA_OK    = False
-    LOAD_ERROR = str(e)
+    _load_errors.append(f"supervisado: {e}")
+
+try:
+    df_unsup = load_unsupervised(FILE_UNSUP)
+except Exception as e:
+    _load_errors.append(f"no supervisado: {e}")
+
+try:
+    df_consumo = load_consumo(FILE_CONSUMO)
+except Exception as e:
+    _load_errors.append(f"consumo: {e}")
+
+DATA_OK    = not (df_sup.empty and df_unsup.empty)
+LOAD_ERROR = "\n".join(_load_errors)
 
 with _TPE(max_workers=3) as _ex:
     _f_roc = _ex.submit(load_roc,        FILE_ROC)
