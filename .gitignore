@@ -151,3 +151,16 @@ venv.bak/
 
 ## data
 data/
+!data/.gitkeep
+!data/cache/.gitkeep
+
+## Archivos de datos grandes (NO versionar)
+*.parquet
+*.pkl
+*.pickle
+*.xlsx
+*.csv
+!src/*.csv  # Mantener CSVs de referencia en src si existen
+
+## Docker
+.dockerignore

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import pickle
 import pandas as pd
@@ -11,15 +12,20 @@ import plotly.graph_objects as go
 # =========================================================
 # 1) RUTAS
 # =========================================================
-BASE_DIR = Path(__file__).resolve().parent
+# Permitir configurar ruta de datos via variable de entorno
+# Por defecto: misma carpeta que el script (modo local)
+# En Docker: /app/data (via volumen)
+DATA_PATH = Path(os.environ.get("DATA_PATH", Path(__file__).resolve().parent))
+CACHE_PATH = Path(os.environ.get("CACHE_PATH", DATA_PATH / "cache"))
 
-FILE_SUP          = BASE_DIR / "top_5000_supervisado.xlsx"
-FILE_UNSUP        = BASE_DIR / "top_5000_no_supervisado.xlsx"
-FILE_CONSUMO      = BASE_DIR / "consumo_011223_01062025_filtrado.parquet"
-FILE_ROC          = BASE_DIR / "informacion_curva_roc.pickle"
-FILE_GEO          = BASE_DIR / "georeferencias.csv"
-FILE_RESULTADOS_1 = BASE_DIR / "resultados_1.parquet"
-FILE_RESDF_LAST   = BASE_DIR / "resultados_df_last.csv"
+FILE_SUP          = DATA_PATH / "top_5000_supervisado.xlsx"
+FILE_UNSUP        = DATA_PATH / "top_5000_no_supervisado.xlsx"
+FILE_CONSUMO      = DATA_PATH / "consumo_011223_01062025_filtrado.parquet"
+FILE_ROC          = DATA_PATH / "informacion_curva_roc.pickle"
+FILE_GEO          = DATA_PATH / "georeferencias.csv"
+FILE_RESULTADOS_1 = DATA_PATH / "resultados_1.parquet"
+FILE_RESDF_LAST   = DATA_PATH / "resultados_df_last.csv"
+FILE_MAH_CACHE    = CACHE_PATH / "mahalanobis_cache.pkl"
 
 # =========================================================
 # 2) FUNCIONES DE CARGA
@@ -195,9 +201,29 @@ def _precompute_mahalanobis(df_r1, df_last):
         cache[cid] = {**ge, "fraud_score": float(row[fc]) if fc else None}
     return cache
 
-print("Pre-computando Mahalanobis…", flush=True)
-_MAH_CACHE = _precompute_mahalanobis(df_res1_full.copy(), df_res_last.copy())
-print(f"Cache listo: {len(_MAH_CACHE)} clientes.", flush=True)
+# ── Cargar o calcular cache de Mahalanobis ─────────────────
+def _load_or_compute_mahalanobis(df_r1, df_last):
+    """
+    Intenta cargar cache pre-calculado, si no existe lo calcula.
+    """
+    # Intentar cargar cache si existe
+    if FILE_MAH_CACHE.exists():
+        try:
+            print(f"Cargando cache de Mahalanobis desde {FILE_MAH_CACHE}…", flush=True)
+            with open(FILE_MAH_CACHE, "rb") as f:
+                cache = pickle.load(f)
+            print(f"✓ Cache cargado: {len(cache)} clientes.", flush=True)
+            return cache
+        except Exception as e:
+            print(f"⚠ Error cargando cache: {e}. Recalculando…", flush=True)
+    
+    # Calcular si no hay cache o está corrupto
+    print("Pre-computando Mahalanobis…", flush=True)
+    cache = _precompute_mahalanobis(df_r1, df_last)
+    print(f"✓ Cálculo completado: {len(cache)} clientes.", flush=True)
+    return cache
+
+_MAH_CACHE = _load_or_compute_mahalanobis(df_res1_full.copy(), df_res_last.copy())
 
 # =========================================================
 # 4) PALETA SW DISICO
