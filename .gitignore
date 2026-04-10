@@ -149,8 +149,9 @@ ENV/
 env.bak/
 venv.bak/
 
-## data
-data/
+# Ignorar todo el contenido de data
+data/*
+# Pero NO ignorar los archivos .gitkeep (esto fuerza a Git a crear la carpeta)
 !data/.gitkeep
 !data/cache/.gitkeep
 
