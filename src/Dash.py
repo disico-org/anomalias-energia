@@ -154,8 +154,11 @@ ids_unsup = sorted(df_unsup["producto"].dropna().astype(int).tolist()) if DATA_O
 # Pre-filtrar consumo y geo independientemente por método
 if DATA_OK:
     _s_ids = set(ids_sup);   _u_ids = set(ids_unsup)
-    df_consumo_sup   = df_consumo[df_consumo["CLIENTE_ID"].isin(_s_ids)].copy()
-    df_consumo_unsup = df_consumo[df_consumo["CLIENTE_ID"].isin(_u_ids)].copy()
+    if not df_consumo.empty and "CLIENTE_ID" in df_consumo.columns:
+        df_consumo_sup   = df_consumo[df_consumo["CLIENTE_ID"].isin(_s_ids)].copy()
+        df_consumo_unsup = df_consumo[df_consumo["CLIENTE_ID"].isin(_u_ids)].copy()
+    else:
+        df_consumo_sup = df_consumo_unsup = df_consumo.copy()
     df_geo_sup   = df_geo_raw[df_geo_raw["producto"].isin(_s_ids)].copy() if not df_geo_raw.empty else pd.DataFrame()
     df_geo_unsup = df_geo_raw[df_geo_raw["producto"].isin(_u_ids)].copy() if not df_geo_raw.empty else pd.DataFrame()
 else:
