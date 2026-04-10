@@ -1,16 +1,11 @@
-version: '3.8'
-
 services:
   disico-dashboard:
     build: .
-    container_name: disico-dashboard
     ports:
       - "8050:8050"
     volumes:
-      # Volumen para datos persistentes (subir vía SFTP)
       - ./data:/app/data:ro
     environment:
-      # Variables de entorno para rutas
       - DATA_PATH=/app/data
       - CACHE_PATH=/app/data/cache
       - PYTHONUNBUFFERED=1
@@ -21,7 +16,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    # Límites de recursos (opcional, ajustar según necesidad)
     deploy:
       resources:
         limits:
