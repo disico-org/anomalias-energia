@@ -24,7 +24,7 @@ COPY entrypoint.py .
 EXPOSE 8050
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 --start-period=300s \
     CMD curl -f http://localhost:8050/ || exit 1
 
 # Comando de inicio (entrypoint verifica datos antes de arrancar)

@@ -30,7 +30,6 @@ GENERATED_FILES = [
     "resultados_df_last.csv",
 ]
 
-# Archivo marcador que indica que los datos son de ejemplo
 MARKER_FILE = ".dummy_data_marker.json"
 
 
@@ -41,16 +40,13 @@ def _resolve_data_path(args_path: str | None) -> Path:
 
 
 def _write_marker(data_path: Path):
-    """Escribe un archivo marcador con metadatos de la generación."""
     from datetime import datetime, timezone
-
     marker = data_path / MARKER_FILE
     info = {
         "tipo": "dummy_data",
         "generado": datetime.now(timezone.utc).isoformat(),
         "archivos": GENERATED_FILES,
-        "nota": "Datos de ejemplo generados por generate_dummy_data.py. "
-                "Ejecutar 'python scripts/generate_dummy_data.py clean' para eliminarlos.",
+        "nota": "Datos de ejemplo. Ejecutar 'clean' para eliminarlos.",
     }
     marker.write_text(json.dumps(info, indent=2, ensure_ascii=False), encoding="utf-8")
 
@@ -59,10 +55,9 @@ def _has_marker(data_path: Path) -> bool:
     return (data_path / MARKER_FILE).exists()
 
 
-# ── Funciones de generación ──────────────────────────────────
+# ── Funciones de generación (vectorizadas) ───────────────────
 
 def extract_ids(data_path: Path) -> np.ndarray:
-    """Lee los 2 Excel y devuelve la unión de IDs de producto únicos."""
     ids = set()
     for name, id_candidates in [
         ("top_5000_supervisado.xlsx", ["producto"]),
@@ -76,14 +71,13 @@ def extract_ids(data_path: Path) -> np.ndarray:
         col = next((c for c in id_candidates if c in df.columns), df.columns[1])
         vals = pd.to_numeric(df[col], errors="coerce").dropna().astype(int).unique()
         ids.update(vals)
-        print(f"  ✓ {name}: {len(vals)} IDs extraídos (col: {col})")
+        print(f"  ✓ {name}: {len(vals)} IDs (col: {col})")
     if not ids:
         raise RuntimeError("No se pudo extraer ningún ID de los Excel.")
     return np.array(sorted(ids))
 
 
 def assign_demographics(ids: np.ndarray, rng: np.random.Generator) -> pd.DataFrame:
-    """Asigna atributos demográficos ficticios a cada ID."""
     n = len(ids)
     return pd.DataFrame({
         "CLIENTE_ID": ids,
@@ -96,36 +90,38 @@ def assign_demographics(ids: np.ndarray, rng: np.random.Generator) -> pd.DataFra
 
 
 def gen_consumo(ids: np.ndarray, demo: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
-    """Genera serie temporal mensual dic-2023 a jun-2025 para cada cliente."""
+    """Genera serie temporal mensual (vectorizado, sin loops Python)."""
     fechas = pd.date_range("2023-12-01", "2025-06-01", freq="MS")
     n_meses = len(fechas)
     n_ids = len(ids)
 
+    # Matrices vectorizadas: (n_ids, n_meses)
     base = rng.lognormal(mean=5.5, sigma=0.5, size=n_ids)
     noise = rng.normal(0, 0.15, size=(n_ids, n_meses))
     seasonal = 0.1 * np.sin(2 * np.pi * np.arange(n_meses) / 12)
     consumo_matrix = base[:, None] * np.exp(noise + seasonal[None, :])
-    consumo_matrix = np.clip(consumo_matrix, 20, 2000)
+    consumo_matrix = np.clip(consumo_matrix, 20, 2000).round(2)
 
-    rows = []
-    for i, cid in enumerate(ids):
-        for j, fecha in enumerate(fechas):
-            rows.append({
-                "CLIENTE_ID": cid,
-                "fecha": fecha,
-                "consumo": round(consumo_matrix[i, j], 2),
-                "mes": fecha.month,
-                "consumo_actual": round(consumo_matrix[i, j], 2),
-                "consumo_prev": round(consumo_matrix[i, j - 1], 2) if j > 0 else round(consumo_matrix[i, j] * 0.95, 2),
-            })
+    # Construir DataFrame con repeat/tile (sin loop)
+    ids_rep = np.repeat(ids, n_meses)
+    fechas_tile = np.tile(fechas, n_ids)
+    consumo_flat = consumo_matrix.ravel()
 
-    df = pd.DataFrame(rows)
-    df = df.merge(demo, on="CLIENTE_ID", how="left")
-    return df
+    # consumo_prev: shift por cliente (columna anterior en la matriz)
+    prev_matrix = np.column_stack([consumo_matrix[:, 0:1] * 0.95, consumo_matrix[:, :-1]]).round(2)
+
+    df = pd.DataFrame({
+        "CLIENTE_ID": ids_rep,
+        "fecha": fechas_tile,
+        "consumo": consumo_flat,
+        "mes": pd.DatetimeIndex(fechas_tile).month,
+        "consumo_actual": consumo_flat,
+        "consumo_prev": prev_matrix.ravel(),
+    })
+    return df.merge(demo, on="CLIENTE_ID", how="left")
 
 
 def gen_georeferencias(ids: np.ndarray, rng: np.random.Generator) -> pd.DataFrame:
-    """Genera coordenadas en el área de Cali, Colombia."""
     n = len(ids)
     lat = 3.4516 + rng.normal(0, 0.03, size=n)
     lon = -76.5320 + rng.normal(0, 0.03, size=n)
@@ -136,7 +132,6 @@ def gen_georeferencias(ids: np.ndarray, rng: np.random.Generator) -> pd.DataFram
 
 
 def gen_roc() -> tuple:
-    """Genera curva ROC sintética con AUC ~ 0.712."""
     fpr = np.linspace(0, 1, 200)
     tpr = 1 - (1 - fpr) ** 2.5
     tpr = tpr * 0.712 / np.trapz(tpr, fpr)
@@ -146,30 +141,31 @@ def gen_roc() -> tuple:
 
 
 def gen_resultados(ids: np.ndarray, demo: pd.DataFrame, rng: np.random.Generator):
-    """Genera resultados_1.parquet y resultados_df_last.csv."""
+    """Genera resultados_1 y resultados_df_last (vectorizado)."""
     fechas = pd.date_range("2023-12-01", "2025-06-01", freq="MS")
+    n_meses = len(fechas)
+    n_ids = len(ids)
 
-    rows_r1 = []
-    for cid in ids:
-        base_prev = rng.lognormal(5.5, 0.5)
-        for fecha in fechas:
-            c_prev = base_prev * rng.lognormal(0, 0.15)
-            c_actual = base_prev * rng.lognormal(0, 0.15)
-            rows_r1.append({
-                "CLIENTE_ID": cid,
-                "consumo_prev": round(c_prev, 2),
-                "consumo_actual": round(c_actual, 2),
-                "year_month": fecha.strftime("%Y-%m-%d"),
-            })
+    # Vectorizado: matrices (n_ids, n_meses)
+    base = rng.lognormal(5.5, 0.5, size=n_ids)
+    prev_matrix = (base[:, None] * rng.lognormal(0, 0.15, size=(n_ids, n_meses))).round(2)
+    actual_matrix = (base[:, None] * rng.lognormal(0, 0.15, size=(n_ids, n_meses))).round(2)
 
-    df_r1 = pd.DataFrame(rows_r1)
+    ids_rep = np.repeat(ids, n_meses)
+    fechas_tile = np.tile(fechas.strftime("%Y-%m-%d"), n_ids)
+
+    df_r1 = pd.DataFrame({
+        "CLIENTE_ID": ids_rep,
+        "consumo_prev": prev_matrix.ravel(),
+        "consumo_actual": actual_matrix.ravel(),
+        "year_month": fechas_tile,
+    })
     df_r1 = df_r1.merge(demo, on="CLIENTE_ID", how="left")
 
-    last_month = fechas[-1].strftime("%Y-%m-%d")
-    fraud_scores = rng.beta(2, 5, size=len(ids))
+    # df_last: un registro por cliente (último mes)
     df_last = demo.copy()
-    df_last["fraud_score"] = np.round(fraud_scores, 6)
-    df_last["year_month"] = last_month
+    df_last["fraud_score"] = np.round(rng.beta(2, 5, size=n_ids), 6)
+    df_last["year_month"] = fechas[-1].strftime("%Y-%m-%d")
 
     return df_r1, df_last
 
@@ -177,7 +173,6 @@ def gen_resultados(ids: np.ndarray, demo: pd.DataFrame, rng: np.random.Generator
 # ── Comandos ─────────────────────────────────────────────────
 
 def cmd_generate(data_path: Path):
-    """Genera los 5 archivos de datos de ejemplo."""
     print("=" * 60)
     print("DISICO — Generador de Datos de Ejemplo")
     print("=" * 60)
@@ -186,7 +181,6 @@ def cmd_generate(data_path: Path):
     if _has_marker(data_path):
         print("⚠ Ya existen datos de ejemplo. Se sobreescribirán.\n")
 
-    # Verificar que no se sobreescriban datos reales
     existing_real = []
     for f in GENERATED_FILES:
         if (data_path / f).exists() and not _has_marker(data_path):
@@ -196,8 +190,7 @@ def cmd_generate(data_path: Path):
         for f in existing_real:
             print(f"   - {f}")
         print("\nEstos podrían ser datos reales de producción.")
-        print("Si deseas sobreescribirlos, elimínalos manualmente primero.")
-        print("O usa --force para ignorar esta verificación.")
+        print("Elimínalos manualmente o usa --force para ignorar esta verificación.")
         return False
 
     rng = np.random.default_rng(42)
@@ -237,30 +230,24 @@ def cmd_generate(data_path: Path):
     print(f"   ✓ {out_r1.name}: {len(df_r1):,} filas")
     print(f"   ✓ {out_last.name}: {len(df_last):,} filas")
 
-    # Escribir marcador
     _write_marker(data_path)
 
-    # Limpiar cache de Mahalanobis pre-calculado (debe recalcularse con los nuevos datos)
     cache_path = data_path / "cache" / "mahalanobis_cache.pkl"
     if cache_path.exists():
         cache_path.unlink()
-        print("\n   ✓ Cache de Mahalanobis eliminado (se recalculará al iniciar el dashboard)")
+        print("   ✓ Cache de Mahalanobis eliminado (se recalculará)")
 
     print("\n" + "=" * 60)
-    print("✅ Datos de ejemplo generados exitosamente!")
+    print("✅ Datos de ejemplo generados!")
     print("=" * 60)
-    print("\nArchivos generados:")
     for f in GENERATED_FILES:
         p = data_path / f
         size_mb = p.stat().st_size / (1024 * 1024)
         print(f"  {f}: {size_mb:.2f} MB")
-    print(f"\nPara eliminarlos: uv run python scripts/generate_dummy_data.py clean")
-    print(f"Para ver estado:   uv run python scripts/generate_dummy_data.py status")
     return True
 
 
 def cmd_clean(data_path: Path, force: bool = False):
-    """Elimina los archivos de datos de ejemplo generados por este script."""
     print("=" * 60)
     print("DISICO — Limpieza de Datos de Ejemplo")
     print("=" * 60)
@@ -268,27 +255,22 @@ def cmd_clean(data_path: Path, force: bool = False):
 
     if not _has_marker(data_path) and not force:
         print("⚠ No se encontró el marcador de datos de ejemplo.")
-        print("  Los archivos actuales podrían ser datos reales de producción.")
+        print("  Los archivos actuales podrían ser datos reales.")
         print("  Usa --force si estás seguro de que deseas eliminarlos.")
         return False
 
     removed = []
-    skipped = []
     for f in GENERATED_FILES:
         p = data_path / f
         if p.exists():
             p.unlink()
             removed.append(f)
-        else:
-            skipped.append(f)
 
-    # Limpiar cache de Mahalanobis (ya no será válido)
     cache_path = data_path / "cache" / "mahalanobis_cache.pkl"
     if cache_path.exists():
         cache_path.unlink()
         removed.append("cache/mahalanobis_cache.pkl")
 
-    # Eliminar marcador
     marker = data_path / MARKER_FILE
     if marker.exists():
         marker.unlink()
@@ -296,21 +278,13 @@ def cmd_clean(data_path: Path, force: bool = False):
     print("Archivos eliminados:")
     for f in removed:
         print(f"  ✓ {f}")
-    if skipped:
-        print("\nArchivos no encontrados (ya no existían):")
-        for f in skipped:
-            print(f"  - {f}")
 
-    print("\n" + "=" * 60)
-    print("✅ Limpieza completada!")
-    print("=" * 60)
-    print("\nEl dashboard ahora usará datos reales si se encuentran en esta ruta.")
-    print("Para regenerar datos de ejemplo: uv run python scripts/generate_dummy_data.py generate")
+    print("\n✅ Limpieza completada!")
+    print("El dashboard ahora usará datos reales si se encuentran en esta ruta.")
     return True
 
 
 def cmd_status(data_path: Path):
-    """Muestra el estado actual de los datos."""
     print("=" * 60)
     print("DISICO — Estado de Datos")
     print("=" * 60)
@@ -319,21 +293,23 @@ def cmd_status(data_path: Path):
     if _has_marker(data_path):
         marker = data_path / MARKER_FILE
         info = json.loads(marker.read_text(encoding="utf-8"))
-        print(f"📌 MODO: Datos de ejemplo (dummy)")
+        print(f"📌 MODO: Datos de ejemplo")
         print(f"   Generados: {info.get('generado', 'desconocido')}")
     else:
         print(f"📌 MODO: Datos reales (o sin datos)")
 
-    print("\nArchivos del dashboard:")
-    all_files = GENERATED_FILES + ["top_5000_supervisado.xlsx", "top_5000_no_supervisado.xlsx",
-                                    "cache/mahalanobis_cache.pkl"]
+    print("\nArchivos:")
+    all_files = GENERATED_FILES + [
+        "top_5000_supervisado.xlsx", "top_5000_no_supervisado.xlsx",
+        "cache/mahalanobis_cache.pkl",
+    ]
     for f in all_files:
         p = data_path / f
         if p.exists():
             size_mb = p.stat().st_size / (1024 * 1024)
             print(f"  ✓ {f} ({size_mb:.2f} MB)")
         else:
-            print(f"  ✗ {f} (no existe)")
+            print(f"  ✗ {f}")
 
 
 def main():
@@ -342,23 +318,19 @@ def main():
     )
     parser.add_argument(
         "command", choices=["generate", "clean", "status"],
-        help="generate: crear datos de ejemplo | clean: eliminar datos de ejemplo | status: ver estado"
+        help="generate | clean | status"
     )
-    parser.add_argument("--data-path", type=str, default=None,
-                        help="Ruta de datos (default: <project>/data)")
-    parser.add_argument("--force", action="store_true",
-                        help="Ignorar verificaciones de seguridad")
+    parser.add_argument("--data-path", type=str, default=None)
+    parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
     data_path = _resolve_data_path(args.data_path)
-
     if not data_path.exists():
         print(f"⛔ La carpeta de datos no existe: {data_path}")
         return
 
     if args.command == "generate":
         if args.force:
-            # Con --force, escribir marcador para saltar verificación de datos reales
             _write_marker(data_path)
         cmd_generate(data_path)
     elif args.command == "clean":
