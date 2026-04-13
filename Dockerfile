@@ -16,7 +16,9 @@ RUN pip install --no-cache-dir --prefer-binary -r requirements-deploy.txt
 
 # Copiar código fuente
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 COPY app.py .
+COPY entrypoint.py .
 
 # Puerto
 EXPOSE 8050
@@ -25,5 +27,5 @@ EXPOSE 8050
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
     CMD curl -f http://localhost:8050/ || exit 1
 
-# Comando de inicio
-CMD ["python", "app.py"]
+# Comando de inicio (entrypoint verifica datos antes de arrancar)
+CMD ["python", "entrypoint.py"]

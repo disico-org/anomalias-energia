@@ -4,11 +4,17 @@ services:
     ports:
       - "8050:8050"
     volumes:
-      - ./data:/app/data:ro
+      - ./data:/app/data
     environment:
       - DATA_PATH=/app/data
       - CACHE_PATH=/app/data/cache
       - PYTHONUNBUFFERED=1
+      # Control de datos de ejemplo:
+      #   auto     — genera datos de ejemplo si faltan archivos (default)
+      #   generate — siempre regenera datos de ejemplo
+      #   clean    — elimina datos de ejemplo, usa solo datos reales
+      #   off      — no verifica nada, arranca directo
+      - DUMMY_DATA=auto
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8050/"]
