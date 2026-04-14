@@ -782,8 +782,9 @@ def confmat(tab):
         colorscale=[[0, C_NAVY_DEEP], [0.35, C_NAVY], [0.65, C_GOLD], [1, C_ORANGE]],
         showscale=True, textfont={"size": 15, "color": "white"}, hoverongaps=False))
     fig.update_layout(xaxis_title="Prediccion", yaxis_title="Valor Real",
-                      yaxis_autorange="reversed", xaxis={"side": "bottom"},
-                      **{**PLOT, "margin": {"t": 20, "b": 50, "l": 70, "r": 20}})
+                      yaxis_autorange="reversed",
+                      **{**PLOT, "margin": {"t": 20, "b": 50, "l": 70, "r": 20},
+                         "xaxis": {**PLOT["xaxis"], "side": "bottom"}})
     return fig
 
 
@@ -811,9 +812,9 @@ def roc(tab):
         fig.update_layout(
             xaxis_title="Tasa de Falsos Positivos",
             yaxis_title="Tasa de Verdaderos Positivos",
-            xaxis={"showgrid": True, "gridcolor": C_BORDER, "range": [0, 1]},
-            yaxis={"showgrid": True, "gridcolor": C_BORDER, "range": [0, 1]},
-            **PLOT)
+            **{**PLOT,
+               "xaxis": {**PLOT["xaxis"], "showgrid": True, "range": [0, 1]},
+               "yaxis": {**PLOT["yaxis"], "showgrid": True, "range": [0, 1]}})
         plot_legend(fig)
         fig.update_layout(legend={"x": 0.55, "y": 0.08})
         return fig
@@ -872,8 +873,9 @@ def mahalanobis(cliente_id, tab):
         title={"text": " | ".join(f"{k}: {v}" for k, v in fd.items()),
                "font": {"size": 11, "color": C_TEXT3}},
         xaxis_title="Consumo periodo anterior", yaxis_title="Consumo periodo actual",
-        xaxis={"showgrid": True, "gridcolor": C_BORDER},
-        yaxis={"showgrid": True, "gridcolor": C_BORDER}, **_pm)
+        **{**_pm,
+           "xaxis": {**PLOT["xaxis"], "showgrid": True},
+           "yaxis": {**PLOT["yaxis"], "showgrid": True}})
     plot_legend(fig)
     fig.update_layout(legend={"x": 0.01, "y": 0.99})
     dc = float(md[et].mean()) if et.any() else float("nan")
