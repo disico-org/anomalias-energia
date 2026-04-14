@@ -14,7 +14,7 @@ services:
       #   generate — siempre regenera datos de ejemplo
       #   clean    — elimina datos de ejemplo, usa solo datos reales
       #   off      — no verifica nada, arranca directo
-      - DUMMY_DATA=auto
+      - DUMMY_DATA=off
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8050/"]
