@@ -258,363 +258,340 @@ del df_res1, df_res_last; _gc.collect()
 print("[Dash] ✓ Carga completa.", flush=True)
 
 # =========================================================
-# 4) PALETA SW DISICO
+# 4) PALETA SW DISICO — Dark Theme (Design System Biblia v3.0)
 # =========================================================
+_FONT = "ui-sans-serif, system-ui, -apple-system, sans-serif"
+_MONO = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+
 # Primarios
-C_NAVY      = "#1B5E7E"   # Navy   — fondos, texto primario, autoridad
-C_STEEL     = "#4A8BA8"   # Steel  — soporte, iconos, etiquetas
-C_GOLD      = "#E8B649"   # Gold   — KPIs, alertas, destacados
-C_ORANGE    = "#FF8C1A"   # Orange — acción, CTA, estados activos
+C_NAVY      = "#1B5E7E"
+C_NAVY_DEEP = "#0D3548"
+C_NAVY_LT   = "#2A7A9F"
+C_STEEL     = "#4A8BA8"
+C_STEEL_LT  = "#7FB3C8"
+C_GOLD      = "#E8B649"
+C_GOLD_LT   = "#F5D080"
+C_ORANGE    = "#FF8C1A"
 
-# Superficies (fondo claro, inspirado en las pantallas del producto)
-C_BG        = "#f5f7f9"   # fondo general — muy claro, casi blanco
-C_WHITE     = "#ffffff"
-C_BORDER    = "#dde3ea"
-C_TEXT      = "#1B2E3C"   # texto principal — navy oscuro
-C_SUBTEXT   = "#5a7080"   # texto secundario — steel grisáceo
-C_RED       = "#e05252"   # error / alerta negativa
+# Superficies Dark
+C_BG        = "#080C10"
+C_BG1       = "#0E1519"
+C_BG2       = "#141C22"
+C_BG3       = "#1C2730"
+C_BG4       = "#232E38"
+C_BORDER    = "rgba(74,139,168,0.18)"
+C_BORDER_HI = "rgba(74,139,168,0.40)"
 
-# Alias para uso general
+# Texto
+C_TEXT      = "#E8EDF2"
+C_TEXT2     = "#8EA8BC"
+C_TEXT3     = "#4E6B7E"
+
+# Semánticos
+C_RED       = "#EF476F"
+C_GREEN     = "#06D6A0"
 C_BLUE      = C_STEEL
-C_LIGHTBLUE = "#7ab8cc"
 
-# Colores de método
-# Supervisado  → Steel (azul medio)   header columnas
-# No supervisado → Gold oscuro        header columnas
-# Ambos comparten Navy para la barra de título del card
-C_SUP_COL_HDR   = C_STEEL          # header columnas tabla supervisado
-C_UNSUP_COL_HDR = "#b07a1a"        # header columnas tabla no supervisado (gold oscuro)
-C_SUP_HDR       = C_NAVY           # título card supervisado (mismo para ambos)
-C_UNSUP_HDR     = C_NAVY           # título card no supervisado
-C_SUP_ROW       = "#e8f2f8"        # fila alterna supervisado — Navy scale muy pálido
-C_UNSUP_ROW     = "#fdf5e0"        # fila alterna no supervisado — Gold scale muy pálido
-C_SUP_BG        = "#f2f8fc"        # fondo card supervisado
-C_UNSUP_BG      = "#fdfaf0"        # fondo card no supervisado
+# Colores de método — sutiles para dark theme
+C_SUP_ACCENT   = C_STEEL      # acento supervisado
+C_UNSUP_ACCENT = C_GOLD       # acento no supervisado
 
-# Paleta de barras: Navy scale + Orange/Gold scale alternados
+# Paleta de gráficos — vibrante sobre fondo oscuro
 BAR_COLORS = [
-    "#1B5E7E",  # Navy 950
-    "#2a7fa8",  # Navy 700
     "#4A8BA8",  # Steel
-    "#7ab8cc",  # Navy 300
-    "#b8dae8",  # Navy 100
-    "#FF8C1A",  # Orange base
-    "#E8B649",  # Gold base
-    "#c0760f",  # Orange oscuro
-    "#b07a1a",  # Gold oscuro
-    "#ffd080",  # Gold claro
+    "#FF8C1A",  # Orange
+    "#E8B649",  # Gold
+    "#7FB3C8",  # Steel light
+    "#2A7A9F",  # Navy light
+    "#F5D080",  # Gold light
+    "#06D6A0",  # Green
+    "#EF476F",  # Red/Pink
+    "#4361EE",  # Blue
+    "#FFD166",  # Yellow
 ]
 
-# ── Tipografía jerárquica ──────────────────────────────────
-# H1: 20px 700  — título de sección principal
-# H2: 15px 700  — título de card / barra de color
-# H3: 13px 600  — subtítulo dentro de card
-# Body: 13px 400
-# Caption: 11px 400 — notas, subtext
-T_H1     = {"fontSize":"20px","fontWeight":"700","color":C_NAVY,
-            "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
-T_H2     = {"fontSize":"15px","fontWeight":"700","color":"white",
-            "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
-T_H3     = {"fontSize":"13px","fontWeight":"600","color":C_NAVY,
-            "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
-T_BODY   = {"fontSize":"13px","fontWeight":"400","color":C_TEXT,
-            "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
-T_CAP    = {"fontSize":"11px","fontWeight":"400","color":C_SUBTEXT,
-            "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
+# ── Tipografía ─────────────────────────────────────────────
+T_H1   = {"fontSize": "22px", "fontWeight": "700", "color": C_TEXT,
+          "fontFamily": _FONT, "letterSpacing": "-0.01em"}
+T_H2   = {"fontSize": "14px", "fontWeight": "700", "color": "white",
+          "fontFamily": _FONT, "letterSpacing": "0.02em"}
+T_H3   = {"fontSize": "14px", "fontWeight": "600", "color": C_TEXT,
+          "fontFamily": _FONT}
+T_BODY = {"fontSize": "13px", "fontWeight": "400", "color": C_TEXT2,
+          "fontFamily": _FONT, "lineHeight": "1.5"}
+T_CAP  = {"fontSize": "11px", "fontWeight": "400", "color": C_TEXT3,
+          "fontFamily": _FONT}
 
-def CARD(bg=C_WHITE, mb="14px"):
-    return {"background":bg,"borderRadius":"10px","padding":"20px","marginBottom":mb,
-            "boxShadow":"0 2px 12px rgba(27,94,126,0.10)","border":f"1px solid {C_BORDER}"}
+LABEL = {"color": C_TEXT3, "fontSize": "11px", "fontWeight": "600",
+         "textTransform": "uppercase", "letterSpacing": "0.06em",
+         "marginBottom": "6px", "display": "block", "fontFamily": _FONT}
+DROP  = {"fontSize": "13px", "fontFamily": _FONT}
 
-def TH(hdr): return {"backgroundColor":hdr,"color":"white","fontWeight":"700",
-                     "fontSize":"13px","textAlign":"center","padding":"10px 12px",
-                     "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
-def TD(bg=C_WHITE): return {"backgroundColor":bg,"color":C_TEXT,"padding":"9px 12px",
-                             "fontSize":"13px","border":f"1px solid {C_BORDER}","textAlign":"center",
-                             "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
+# ── Estilos de plot (dark) ─────────────────────────────────
+PLOT = dict(
+    paper_bgcolor=C_BG2, plot_bgcolor=C_BG1,
+    font={"color": C_TEXT2, "family": _FONT, "size": 12},
+    margin={"t": 36, "b": 48, "l": 56, "r": 24},
+    colorway=BAR_COLORS,
+    xaxis={"gridcolor": C_BORDER, "zerolinecolor": C_BORDER},
+    yaxis={"gridcolor": C_BORDER, "zerolinecolor": C_BORDER},
+)
 
-LABEL = {"color":C_SUBTEXT,"fontSize":"12px","fontWeight":"600","marginBottom":"4px",
-         "display":"block","fontFamily":"ui-sans-serif, system-ui, sans-serif"}
-DROP  = {"fontSize":"13px","fontFamily":"ui-sans-serif, system-ui, sans-serif"}
+TOP_N_OPTIONS = [{"label": "25", "value": 25}, {"label": "50", "value": 50},
+                 {"label": "100", "value": 100}, {"label": "500", "value": 500},
+                 {"label": "1000", "value": 1000}, {"label": "Todos", "value": 999999}]
 
-PLOT = dict(paper_bgcolor=C_WHITE, plot_bgcolor="#f8fafc",
-            font={"color":C_TEXT,
-                  "family":"ui-sans-serif, system-ui, sans-serif",
-                  "size":12},
-            margin={"t":36,"b":48,"l":56,"r":24}, colorway=BAR_COLORS)
+# Tabs — styled via CSS (.custom-tab), minimal inline needed
+TAB_STYLE = {"padding": "12px 22px", "border": "none",
+             "borderBottom": "2px solid transparent",
+             "background": "transparent", "color": C_TEXT3,
+             "fontSize": "13px", "fontWeight": "600", "fontFamily": _FONT}
+TAB_SEL   = {"padding": "12px 22px", "border": "none",
+             "borderBottom": f"2px solid {C_GOLD}",
+             "background": "rgba(232,182,73,0.06)", "color": C_GOLD,
+             "fontSize": "13px", "fontWeight": "700", "fontFamily": _FONT}
 
-TOP_N_OPTIONS = [{"label":"25","value":25},{"label":"50","value":50},
-                 {"label":"100","value":100},{"label":"500","value":500},
-                 {"label":"1000","value":1000},{"label":"Todos","value":999999}]
 
-TAB_STYLE = {"color":C_SUBTEXT,"background":C_WHITE,"border":f"1px solid {C_BORDER}",
-             "padding":"10px 20px","fontSize":"13px","fontWeight":"600",
-             "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
-TAB_SEL   = {"color":C_NAVY,"background":C_BG,
-             "borderTop":f"3px solid {C_ORANGE}",
-             "padding":"10px 20px","fontSize":"13px","fontWeight":"700",
-             "fontFamily":"ui-sans-serif, system-ui, sans-serif"}
-
-def title_bar(text, color):
-    """Barra de título H2 para cards."""
-    return html.Div(text, style={
+def title_bar(text, accent_color=C_NAVY):
+    """Barra de título premium con gradiente sutil."""
+    return html.Div(text, className="title-bar", style={
         **T_H2,
-        "background":color,"padding":"8px 16px","borderRadius":"10px 10px 0 0"})
+        "background": f"linear-gradient(135deg, {accent_color} 0%, {C_NAVY_DEEP} 100%)",
+    })
 
-def section_title(text):
-    """Título H3 dentro de un card (sin barra de color)."""
-    return html.P(text, style={**T_H3, "margin":"0 0 10px 0"})
 
-def card_wrap(children, bg=C_WHITE):
-    return html.Div(style={**CARD(bg),"borderRadius":"0 0 10px 10px",
-                            "marginBottom":"0","paddingTop":"14px"},
-                    children=children)
+def card_wrap(children, **extra):
+    """Card body debajo de title_bar."""
+    return html.Div(className="card-body", children=children,
+                    style={**extra})
 
-def plot_with_legend_bg(fig):
-    """Aplica fondo semitransparente a la leyenda de una figura."""
-    fig.update_layout(legend={"bgcolor":"rgba(255,255,255,0.85)",
-                               "bordercolor":C_BORDER,"borderwidth":1,
-                               "font":{"size":12}})
+
+def plot_legend(fig):
+    """Aplica estilo de leyenda dark consistente."""
+    fig.update_layout(legend={
+        "bgcolor": "rgba(14,21,25,0.9)",
+        "bordercolor": C_BORDER, "borderwidth": 1,
+        "font": {"size": 11, "color": C_TEXT2, "family": _FONT},
+    })
     return fig
 
 # =========================================================
 # 5) LAYOUTS
 # =========================================================
 
+def _data_table(tid, columns, data=None, **kw):
+    """DataTable con estilo dark consistente (CSS maneja colores)."""
+    return dash_table.DataTable(
+        id=tid, columns=columns, data=data or [],
+        page_size=kw.get("page_size", 12),
+        sort_action="native", filter_action="native",
+        row_selectable=kw.get("row_selectable"),
+        selected_rows=kw.get("selected_rows", []),
+        style_table={"overflowX": "auto"},
+        style_cell={"textAlign": "center", "fontFamily": _FONT,
+                     "fontSize": "13px", "padding": "10px 14px",
+                     "border": "none"},
+        style_header={"fontWeight": "600", "textAlign": "center",
+                       "border": "none"},
+        style_as_list_view=True,
+    )
+
+
 # ── Pestaña 1: Scores & Series ────────────────────────────
 tab1_layout = html.Div([
 
-    html.Div(id="error_box_t1",
-             style={"color":C_RED,"whiteSpace":"pre-wrap","marginBottom":"10px","fontSize":"13px"},
+    html.Div(id="error_box_t1", className="error-box",
+             style={"display": "none" if DATA_OK else "block"},
              children="" if DATA_OK else f"Error cargando datos:\n{LOAD_ERROR}"),
 
     # Controles compartidos
-    html.Div(style={**CARD(),"display":"flex","gap":"20px","flexWrap":"wrap","alignItems":"flex-end"},
-             children=[
-                 html.Div([
-                     html.Label("Buscar producto:", style=LABEL),
-                     dcc.Input(id="search_producto", type="text", placeholder="Ej: 41",
-                               style={"width":"150px","padding":"7px 10px","borderRadius":"5px",
-                                      "border":f"1px solid {C_BORDER}","fontSize":"13px","color":C_TEXT}),
-                 ]),
-                 html.Div([
-                     html.Label("Top N:", style=LABEL),
-                     dcc.Dropdown(id="top_n", options=TOP_N_OPTIONS, value=100,
-                                  clearable=False, style={**DROP,"width":"120px"}),
-                 ]),
-             ]),
+    html.Div(className="controls-row", children=[
+        html.Div([
+            html.Label("Buscar producto:", style=LABEL),
+            dcc.Input(id="search_producto", type="text", placeholder="Ej: 41",
+                      style={"width": "160px"}),
+        ]),
+        html.Div([
+            html.Label("Top N:", style=LABEL),
+            dcc.Dropdown(id="top_n", options=TOP_N_OPTIONS, value=100,
+                         clearable=False, style={**DROP, "width": "120px"}),
+        ]),
+    ]),
 
     # Dos tablas de scores lado a lado
-    html.Div(style={"display":"flex","gap":"14px","marginBottom":"14px","alignItems":"flex-start"},
-             children=[
-                 html.Div(style={"flex":"1","minWidth":"0"}, children=[
-                     title_bar("Modelo Supervisado", C_SUP_HDR),
-                     card_wrap(bg=C_SUP_BG, children=[
-                         dash_table.DataTable(
-                             id="tabla_sup",
-                             columns=[{"name":"Producto","id":"producto"},
-                                      {"name":"Predicción Supervisada","id":"score_supervisado",
-                                       "type":"numeric","format":{"specifier":".4f"}}],
-                             data=df_sup.to_dict("records") if DATA_OK else [],
-                             page_size=12, sort_action="native", filter_action="native",
-                             row_selectable="multi", selected_rows=[],
-                             style_table={"overflowX":"auto"},
-                             style_cell=TD(), style_header=TH(C_SUP_COL_HDR),
-                             style_data_conditional=[{"if":{"row_index":"odd"},"backgroundColor":C_SUP_ROW}]),
-                     ]),
-                 ]),
-                 html.Div(style={"flex":"1","minWidth":"0"}, children=[
-                     title_bar("Modelo No Supervisado", C_UNSUP_HDR),
-                     card_wrap(bg=C_UNSUP_BG, children=[
-                         dash_table.DataTable(
-                             id="tabla_unsup",
-                             columns=[{"name":"Producto","id":"producto"},
-                                      {"name":"Score No Supervisado","id":"score_no_supervisado",
-                                       "type":"numeric","format":{"specifier":".4f"}}],
-                             data=df_unsup.to_dict("records") if DATA_OK else [],
-                             page_size=12, sort_action="native", filter_action="native",
-                             row_selectable="multi", selected_rows=[],
-                             style_table={"overflowX":"auto"},
-                             style_cell=TD(), style_header=TH(C_UNSUP_COL_HDR),
-                             style_data_conditional=[{"if":{"row_index":"odd"},"backgroundColor":C_UNSUP_ROW}]),
-                     ]),
-                 ]),
-             ]),
+    html.Div(className="two-col", children=[
+        html.Div([
+            title_bar("Modelo Supervisado", C_SUP_ACCENT),
+            card_wrap([
+                _data_table("tabla_sup",
+                    columns=[{"name": "Producto", "id": "producto"},
+                             {"name": "Prediccion Supervisada", "id": "score_supervisado",
+                              "type": "numeric", "format": {"specifier": ".4f"}}],
+                    data=df_sup.to_dict("records") if DATA_OK else [],
+                    row_selectable="multi", selected_rows=[]),
+            ]),
+        ]),
+        html.Div([
+            title_bar("Modelo No Supervisado", C_UNSUP_ACCENT),
+            card_wrap([
+                _data_table("tabla_unsup",
+                    columns=[{"name": "Producto", "id": "producto"},
+                             {"name": "Score No Supervisado", "id": "score_no_supervisado",
+                              "type": "numeric", "format": {"specifier": ".4f"}}],
+                    data=df_unsup.to_dict("records") if DATA_OK else [],
+                    row_selectable="multi", selected_rows=[]),
+            ]),
+        ]),
+    ]),
 
     # Estadísticas lado a lado
-    html.Div(style={"display":"flex","gap":"14px","marginBottom":"14px","alignItems":"flex-start"},
-             children=[
-                 html.Div(style={"flex":"1","minWidth":"0"}, children=[
-                     title_bar("Estadísticas Descriptivas – Modelo Supervisado", C_SUP_HDR),
-                     card_wrap(bg=C_SUP_BG, children=[
-                         dash_table.DataTable(
-                             id="tabla_stats_sup",
-                             columns=[{"name":"Estadístico","id":"Estadístico"},
-                                      {"name":"Predicción Supervisada","id":"Predicción Supervisada",
-                                       "type":"numeric","format":{"specifier":".4f"}}],
-                             data=[], style_table={"overflowX":"auto"},
-                             style_cell=TD(), style_header=TH(C_SUP_COL_HDR),
-                             style_data_conditional=[{"if":{"row_index":"odd"},"backgroundColor":C_SUP_ROW}]),
-                     ]),
-                 ]),
-                 html.Div(style={"flex":"1","minWidth":"0"}, children=[
-                     title_bar("Estadísticas Descriptivas – Modelo No Supervisado", C_UNSUP_HDR),
-                     card_wrap(bg=C_UNSUP_BG, children=[
-                         dash_table.DataTable(
-                             id="tabla_stats_unsup",
-                             columns=[{"name":"Estadístico","id":"Estadístico"},
-                                      {"name":"Score No Supervisado","id":"Score No Supervisado",
-                                       "type":"numeric","format":{"specifier":".4f"}}],
-                             data=[], style_table={"overflowX":"auto"},
-                             style_cell=TD(), style_header=TH(C_UNSUP_COL_HDR),
-                             style_data_conditional=[{"if":{"row_index":"odd"},"backgroundColor":C_UNSUP_ROW}]),
-                     ]),
-                 ]),
-             ]),
+    html.Div(className="two-col", children=[
+        html.Div([
+            title_bar("Estadisticas – Supervisado", C_SUP_ACCENT),
+            card_wrap([
+                _data_table("tabla_stats_sup",
+                    columns=[{"name": "Estadistico", "id": "Estadístico"},
+                             {"name": "Prediccion Supervisada", "id": "Predicción Supervisada",
+                              "type": "numeric", "format": {"specifier": ".4f"}}]),
+            ]),
+        ]),
+        html.Div([
+            title_bar("Estadisticas – No Supervisado", C_UNSUP_ACCENT),
+            card_wrap([
+                _data_table("tabla_stats_unsup",
+                    columns=[{"name": "Estadistico", "id": "Estadístico"},
+                             {"name": "Score No Supervisado", "id": "Score No Supervisado",
+                              "type": "numeric", "format": {"specifier": ".4f"}}]),
+            ]),
+        ]),
+    ]),
 
     # Series de tiempo lado a lado
-    html.Div(style={"display":"flex","gap":"14px","marginBottom":"14px","alignItems":"flex-start"},
-             children=[
-                 html.Div(style={"flex":"1","minWidth":"0"}, children=[
-                     title_bar("Series de Tiempo – Modelo Supervisado", C_SUP_HDR),
-                     card_wrap(bg=C_SUP_BG, children=[dcc.Graph(id="grafica_consumo_sup")]),
-                 ]),
-                 html.Div(style={"flex":"1","minWidth":"0"}, children=[
-                     title_bar("Series de Tiempo – Modelo No Supervisado", C_UNSUP_HDR),
-                     card_wrap(bg=C_UNSUP_BG, children=[dcc.Graph(id="grafica_consumo_unsup")]),
-                 ]),
-             ]),
+    html.Div(className="two-col", children=[
+        html.Div([
+            title_bar("Series de Tiempo – Supervisado", C_SUP_ACCENT),
+            card_wrap([dcc.Graph(id="grafica_consumo_sup")]),
+        ]),
+        html.Div([
+            title_bar("Series de Tiempo – No Supervisado", C_UNSUP_ACCENT),
+            card_wrap([dcc.Graph(id="grafica_consumo_unsup")]),
+        ]),
+    ]),
 ])
 
 
 # ── Helper: layout descriptivas ───────────────────────────
-def _desc_layout(sfx, hdr, row_bg, card_bg, client_list):
+def _desc_layout(sfx, accent, client_list):
     return html.Div([
         # Controles
-        html.Div(style={**CARD(),"display":"flex","gap":"20px","flexWrap":"wrap","alignItems":"flex-end"},
-                 children=[
-                     html.Div([
-                         html.Label("Filtrar por Cliente ID:", style=LABEL),
-                         dcc.Dropdown(id=f"filter_cliente_{sfx}",
-                                      options=[{"label":str(c),"value":c} for c in client_list],
-                                      value=None, placeholder="Todos", clearable=True,
-                                      style={**DROP,"width":"200px"}),
-                     ]),
-                     html.Div([
-                         html.Label("Top N clientes:", style=LABEL),
-                         dcc.Dropdown(id=f"top_n_desc_{sfx}", options=TOP_N_OPTIONS, value=10,
-                                      clearable=False, style={**DROP,"width":"150px"}),
-                     ]),
-                 ]),
+        html.Div(className="controls-row", children=[
+            html.Div([
+                html.Label("Filtrar por Cliente ID:", style=LABEL),
+                dcc.Dropdown(id=f"filter_cliente_{sfx}",
+                             options=[{"label": str(c), "value": c} for c in client_list],
+                             value=None, placeholder="Todos", clearable=True,
+                             style={**DROP, "width": "200px"}),
+            ]),
+            html.Div([
+                html.Label("Top N clientes:", style=LABEL),
+                dcc.Dropdown(id=f"top_n_desc_{sfx}", options=TOP_N_OPTIONS, value=10,
+                             clearable=False, style={**DROP, "width": "150px"}),
+            ]),
+        ]),
         # Categoría (fila completa)
-        html.Div(style={"marginBottom":"14px"}, children=[
-            title_bar("Categoría  (código)", hdr),
-            card_wrap(bg=card_bg, children=[
-                dcc.Graph(id=f"graf_categoria_{sfx}", style={"height":"300px"})]),
+        html.Div(style={"marginBottom": "16px"}, children=[
+            title_bar("Categoria", accent),
+            card_wrap([dcc.Graph(id=f"graf_categoria_{sfx}", style={"height": "300px"})]),
         ]),
         # Grid 2×2
-        html.Div(style={"display":"grid","gridTemplateColumns":"1fr 1fr","gap":"14px",
-                        "marginBottom":"14px"},
-                 children=[
-                     html.Div([title_bar("Subcategoría  (código)", hdr),
-                                card_wrap(bg=card_bg, children=[
-                                    dcc.Graph(id=f"graf_subcategoria_{sfx}",style={"height":"240px"})])]),
-                     html.Div([title_bar("Localidad  (código)", hdr),
-                                card_wrap(bg=card_bg, children=[
-                                    dcc.Graph(id=f"graf_localidad_{sfx}",style={"height":"240px"})])]),
-                     html.Div([title_bar("Barrio  (código)", hdr),
-                                card_wrap(bg=card_bg, children=[
-                                    dcc.Graph(id=f"graf_barrio_{sfx}",style={"height":"240px"})])]),
-                     html.Div([title_bar("Tipo de Producto  (código)", hdr),
-                                card_wrap(bg=card_bg, children=[
-                                    dcc.Graph(id=f"graf_tipo_{sfx}",style={"height":"240px"})])]),
-                 ]),
+        html.Div(className="grid-2x2", children=[
+            html.Div([title_bar("Subcategoria", accent),
+                       card_wrap([dcc.Graph(id=f"graf_subcategoria_{sfx}", style={"height": "260px"})])]),
+            html.Div([title_bar("Localidad", accent),
+                       card_wrap([dcc.Graph(id=f"graf_localidad_{sfx}", style={"height": "260px"})])]),
+            html.Div([title_bar("Barrio", accent),
+                       card_wrap([dcc.Graph(id=f"graf_barrio_{sfx}", style={"height": "260px"})])]),
+            html.Div([title_bar("Tipo de Producto", accent),
+                       card_wrap([dcc.Graph(id=f"graf_tipo_{sfx}", style={"height": "260px"})])]),
+        ]),
         # Mapa + KPIs
-        html.Div(style={"display":"flex","gap":"14px","alignItems":"flex-start"}, children=[
-            html.Div(style={**CARD(),"flex":"3","minWidth":"0","marginBottom":"0"}, children=[
-                html.P("Mapa de Geolocalización",
-                       style={**T_H3,"margin":"0 0 8px 0"}),
-                dcc.Graph(id=f"graf_mapa_{sfx}", style={"height":"400px"}),
+        html.Div(className="map-kpi-row", children=[
+            html.Div(className="map-col disico-card", style={"padding": "20px"}, children=[
+                html.P("Mapa de Geolocalizacion", style={**T_H3, "margin": "0 0 10px 0"}),
+                dcc.Graph(id=f"graf_mapa_{sfx}", style={"height": "400px"}),
             ]),
-            html.Div(style={**CARD(),"flex":"1","minWidth":"180px","marginBottom":"0"}, children=[
-                html.P("Resumen",style={**T_H3,"margin":"0 0 14px 0"}),
-                html.Div(id=f"kpi_total_{sfx}",
-                         style={"background":"#f0f5fb","borderRadius":"6px","padding":"12px 14px",
-                                "marginBottom":"10px","borderLeft":f"4px solid {C_ORANGE}"},
-                         children=[html.Span("Total clientes",style={"color":C_SUBTEXT,"fontSize":"12px","display":"block"}),
-                                   html.Span("–",style={"color":C_NAVY,"fontWeight":"700","fontSize":"22px"})]),
-                html.Div(id=f"kpi_sindir_{sfx}",
-                         style={"background":"#fff5f5","borderRadius":"6px","padding":"12px 14px",
-                                "borderLeft":f"4px solid {C_RED}"},
-                         children=[html.Span("Sin dirección",style={"color":C_SUBTEXT,"fontSize":"12px","display":"block"}),
-                                   html.Span("–",style={"color":C_RED,"fontWeight":"700","fontSize":"22px"})]),
+            html.Div(className="kpi-col", children=[
+                html.P("Resumen", style={**T_H3, "margin": "0 0 6px 0"}),
+                html.Div(id=f"kpi_total_{sfx}", className="kpi-card", children=[
+                    html.Span("Total clientes", className="kpi-label"),
+                    html.Span("--", className="kpi-value"),
+                ]),
+                html.Div(id=f"kpi_sindir_{sfx}", className="kpi-card danger", children=[
+                    html.Span("Sin direccion", className="kpi-label"),
+                    html.Span("--", className="kpi-value"),
+                ]),
             ]),
         ]),
     ])
 
-tab2_layout = _desc_layout("unsup", C_UNSUP_HDR, C_UNSUP_ROW, C_UNSUP_BG, ids_unsup)
-tab3_layout = _desc_layout("sup",   C_SUP_HDR,   C_SUP_ROW,   C_SUP_BG,   ids_sup)
+tab2_layout = _desc_layout("unsup", C_UNSUP_ACCENT, ids_unsup)
+tab3_layout = _desc_layout("sup",   C_SUP_ACCENT,   ids_sup)
 
 # ── Pestaña 4: Métricas de los Modelos ────────────────────
-METRICS = {"Exactitud":"67.4 %","AUC":"0.712","Recall (anomalías)":"41.3 %",
-           "Precisión (anomalías)":"64.5 %","Perfil":"Mejor AUC · RECOMENDADO"}
+METRICS = {"Exactitud": "67.4 %", "AUC": "0.712", "Recall (anomalias)": "41.3 %",
+           "Precision (anomalias)": "64.5 %", "Perfil": "Mejor AUC"}
 
 tab4_layout = html.Div([
-    html.Div(style={"display":"grid","gridTemplateColumns":"1fr 1fr 1fr","gap":"14px","marginBottom":"14px"},
-             children=[
-                 html.Div(style=CARD(), children=[
-                     html.P("Curva ROC – LightGBM",
-                            style={**T_H3,"margin":"0 0 8px 0"}),
-                     dcc.Graph(id="graf_roc", style={"height":"360px"}),
-                     html.Div(id="roc_error_box",style={"color":C_RED,"fontSize":"12px","marginTop":"6px"},
-                              children=f"Error ROC: {roc_error}" if roc_error else ""),
-                 ]),
-                 html.Div(style=CARD(), children=[
-                     html.P("Métricas – LightGBM",
-                            style={**T_H3,"margin":"0 0 14px 0"}),
-                     html.Div(style={"display":"flex","flexDirection":"column","gap":"9px"},
-                              children=[
-                                  html.Div(style={"background":"#f0f5fb","borderRadius":"6px","padding":"9px 12px",
-                                                  "display":"flex","justifyContent":"space-between","alignItems":"center",
-                                                  "borderLeft":f"4px solid {C_ORANGE}"},
-                                           children=[html.Span(k,style={**T_BODY,"color":C_SUBTEXT}),
-                                                     html.Span(v,style={**T_H3})])
-                                  for k,v in METRICS.items()
-                              ]),
-                     html.Div(style={"marginTop":"14px","padding":"9px 12px","background":"#e8f4fb",
-                                     "borderRadius":"6px","border":f"1px solid {C_GOLD}"},
-                              children=html.P("LightGBM obtuvo el mayor AUC (0.712) con buen balance entre "
-                                              "recall y precisión para detección de anomalías energéticas.",
-                                             style={"color":C_SUBTEXT,"fontSize":"11px","margin":"0"})),
-                 ]),
-                 html.Div(style=CARD(), children=[
-                     html.P("Matriz de Confusión – LightGBM",
-                            style={**T_H3,"margin":"0 0 8px 0"}),
-                     dcc.Graph(id="graf_confmat", style={"height":"360px"}),
-                 ]),
-             ]),
-    html.Div(style=CARD(), children=[
-        html.P("Análisis No Supervisado – Distancia de Mahalanobis",
-               style={**T_H3,"margin":"0 0 4px 0"}),
+    html.Div(className="grid-3", children=[
+        html.Div(className="disico-card", style={"padding": "20px"}, children=[
+            html.P("Curva ROC – LightGBM", style={**T_H3, "margin": "0 0 10px 0"}),
+            dcc.Graph(id="graf_roc", style={"height": "360px"}),
+            html.Div(id="roc_error_box", className="error-box",
+                     style={"display": "block" if roc_error else "none", "marginTop": "8px"},
+                     children=f"Error ROC: {roc_error}" if roc_error else ""),
+        ]),
+        html.Div(className="disico-card", style={"padding": "20px"}, children=[
+            html.P("Metricas – LightGBM", style={**T_H3, "margin": "0 0 16px 0"}),
+            html.Div(style={"display": "flex", "flexDirection": "column", "gap": "8px"},
+                     children=[
+                         html.Div(className="metric-row", children=[
+                             html.Span(k, style={**T_BODY}),
+                             html.Span(v, style={**T_H3, "color": C_GOLD})])
+                         for k, v in METRICS.items()
+                     ]),
+            html.Div(className="insight-box", children=
+                html.P("LightGBM obtuvo el mayor AUC (0.712) con buen balance entre "
+                       "recall y precision para deteccion de anomalias energeticas.",
+                       style={**T_CAP, "margin": "0", "color": C_TEXT2})),
+        ]),
+        html.Div(className="disico-card", style={"padding": "20px"}, children=[
+            html.P("Matriz de Confusion – LightGBM", style={**T_H3, "margin": "0 0 10px 0"}),
+            dcc.Graph(id="graf_confmat", style={"height": "360px"}),
+        ]),
+    ]),
+    html.Div(className="disico-card mah-section", style={"padding": "24px", "marginTop": "16px"}, children=[
+        html.P("Analisis No Supervisado – Distancia de Mahalanobis",
+               style={**T_H3, "margin": "0 0 4px 0"}),
         html.P("Ingresa un Cliente ID para compararlo frente a su grupo. Ordenado por fraud score descendente.",
-               style={**T_CAP,"margin":"0 0 12px 0"}),
-        html.Div(style={"display":"flex","gap":"10px","alignItems":"flex-end","marginBottom":"14px","flexWrap":"wrap"},
+               style={**T_CAP, "margin": "0 0 16px 0"}),
+        html.Div(className="controls-row",
+                 style={"marginBottom": "16px", "padding": "12px 16px"},
                  children=[
                      html.Div([
                          html.Label("Buscar Cliente ID:", style=LABEL),
                          dcc.Input(id="dd_cliente_mah", type="number",
                                    placeholder="Ej: 11116848", debounce=True,
                                    value=_mah_ids_ordered[0] if _mah_ids_ordered else None,
-                                   style={"width":"200px","padding":"7px 10px","borderRadius":"5px",
-                                          "border":f"1px solid {C_BORDER}","fontSize":"13px","color":C_TEXT}),
+                                   style={"width": "200px"}),
                      ]),
-                     html.Div(style={"color":C_SUBTEXT,"fontSize":"11px","paddingBottom":"8px"},
-                              children=(f"Top anómalo por defecto: {_mah_ids_ordered[0] if _mah_ids_ordered else '–'}"
-                                        f"  ·  {len(_mah_ids_ordered)} clientes disponibles")),
+                     html.Div(className="info-badge",
+                              style={"alignSelf": "flex-end", "marginBottom": "2px"},
+                              children=(f"Top: {_mah_ids_ordered[0] if _mah_ids_ordered else '--'}"
+                                        f"  |  {len(_mah_ids_ordered)} clientes")),
                  ]),
-        html.Div(id="label_cliente_activo",
-                 style={"color":C_SUBTEXT,"fontSize":"12px","marginBottom":"8px"}),
-        dcc.Graph(id="graf_mahalanobis", style={"height":"520px"}),
+        html.Div(id="label_cliente_activo", className="mah-label",
+                 style={"marginBottom": "12px"}),
+        dcc.Graph(id="graf_mahalanobis", style={"height": "520px"}),
     ]),
 ])
 
@@ -622,29 +599,38 @@ tab4_layout = html.Div([
 # 6) APP
 # =========================================================
 app = Dash(__name__, suppress_callback_exceptions=True)
-app.title = "DISICO – Anomalías Energía"
+app.title = "DISICO – Anomalias Energia"
 
 app.layout = html.Div(
-    style={"background":C_BG,"minHeight":"100vh","fontFamily":"ui-sans-serif, system-ui, sans-serif"},
+    style={"background": C_BG, "minHeight": "100vh", "fontFamily": _FONT},
     children=[
-        html.Div(style={"background":C_NAVY,"padding":"0 28px","display":"flex","alignItems":"center",
-                        "gap":"14px","height":"62px","boxShadow":"0 3px 12px rgba(27,94,126,0.30)"},
-                 children=[
-                     html.Span("SW DISICO",style={"color":"white","fontWeight":"800",
-                                                   "fontSize":"20px","letterSpacing":"1.5px",
-                                                   "fontFamily":"ui-sans-serif, system-ui, sans-serif"}),
-                     html.Span("·",style={"color":C_GOLD,"fontSize":"22px","marginLeft":"6px"}),
-                     html.Span("Detección de Anomalías de Consumo Energético",
-                               style={"color":C_STEEL,"fontSize":"14px","marginLeft":"4px",
-                                      "fontFamily":"ui-sans-serif, system-ui, sans-serif"}),
-                 ]),
-        html.Div(style={"padding":"20px 24px"}, children=[
-            dcc.Tabs(id="main_tabs", value="tab1", style={"marginBottom":"16px"},
+        # ── Topbar premium con blur ──
+        html.Div(className="topbar", style={
+            "background": "rgba(8,12,16,0.88)", "padding": "0 28px",
+            "display": "flex", "alignItems": "center", "justifyContent": "space-between",
+            "height": "56px",
+        }, children=[
+            html.Div(style={"display": "flex", "alignItems": "center", "gap": "12px"}, children=[
+                html.Div(className="topbar-dot"),
+                html.Span("SW DISICO", style={
+                    "color": "white", "fontWeight": "800", "fontSize": "15px",
+                    "letterSpacing": "0.04em", "textTransform": "uppercase",
+                    "fontFamily": _FONT}),
+                html.Span("Deteccion de Anomalias de Consumo Energetico", style={
+                    "color": C_TEXT3, "fontSize": "13px", "fontFamily": _FONT,
+                    "marginLeft": "4px"}),
+            ]),
+            html.Span("v3.0", className="info-badge"),
+        ]),
+        # ── Contenido principal ──
+        html.Div(style={"padding": "24px 28px"}, children=[
+            dcc.Tabs(id="main_tabs", value="tab1",
+                     style={"marginBottom": "20px", "borderBottom": f"1px solid {C_BORDER}"},
                      children=[
-                         dcc.Tab(label="Scores y Series",            value="tab1", style=TAB_STYLE, selected_style=TAB_SEL),
-                         dcc.Tab(label="Descriptivas No Supervisado", value="tab2", style=TAB_STYLE, selected_style=TAB_SEL),
-                         dcc.Tab(label="Descriptivas Supervisado",    value="tab3", style=TAB_STYLE, selected_style=TAB_SEL),
-                         dcc.Tab(label="Metricas de los Modelos",     value="tab4", style=TAB_STYLE, selected_style=TAB_SEL),
+                         dcc.Tab(label="Scores y Series",              value="tab1", style=TAB_STYLE, selected_style=TAB_SEL),
+                         dcc.Tab(label="Descriptivas No Supervisado",  value="tab2", style=TAB_STYLE, selected_style=TAB_SEL),
+                         dcc.Tab(label="Descriptivas Supervisado",     value="tab3", style=TAB_STYLE, selected_style=TAB_SEL),
+                         dcc.Tab(label="Metricas de los Modelos",      value="tab4", style=TAB_STYLE, selected_style=TAB_SEL),
                      ]),
             html.Div(id="tab_content"),
         ]),
@@ -714,16 +700,10 @@ def graph_sup(derived, selected):
     fig = px.line(dff, x="fecha", y="consumo", color=dff["CLIENTE_ID"].astype(str),
                   title=f"Consumo supervisado – {len(ids)} cliente(s)",
                   color_discrete_sequence=BAR_COLORS, template=None)
-    _plot_sup = {**PLOT, "plot_bgcolor":"#eef5fa"}
     fig.update_layout(height=380, legend_title_text="CLIENTE_ID",
-                      legend={"bgcolor":"rgba(255,255,255,0.85)",
-                              "bordercolor":C_BORDER,"borderwidth":1,
-                              "font":{"size":12,"family":"ui-sans-serif, system-ui, sans-serif"}},
-                      title={"font":{"size":13,"color":C_NAVY,
-                                     "family":"ui-sans-serif, system-ui, sans-serif"}},
-                      **_plot_sup)
-    fig.update_xaxes(showgrid=True, gridcolor=C_BORDER)
-    fig.update_yaxes(showgrid=True, gridcolor=C_BORDER)
+                      title={"font": {"size": 13, "color": C_TEXT2, "family": _FONT}},
+                      **PLOT)
+    plot_legend(fig)
     return fig
 
 
@@ -745,23 +725,17 @@ def graph_unsup(derived, selected):
     fig = px.line(dff, x="fecha", y="consumo", color=dff["CLIENTE_ID"].astype(str),
                   title=f"Consumo no supervisado – {len(ids)} cliente(s)",
                   color_discrete_sequence=BAR_COLORS, template=None)
-    _plot_unsup = {**PLOT, "plot_bgcolor":"#fdfaf0"}
     fig.update_layout(height=380, legend_title_text="CLIENTE_ID",
-                      legend={"bgcolor":"rgba(255,255,255,0.85)",
-                              "bordercolor":C_BORDER,"borderwidth":1,
-                              "font":{"size":12,"family":"ui-sans-serif, system-ui, sans-serif"}},
-                      title={"font":{"size":13,"color":C_NAVY,
-                                     "family":"ui-sans-serif, system-ui, sans-serif"}},
-                      **_plot_unsup)
-    fig.update_xaxes(showgrid=True, gridcolor=C_BORDER)
-    fig.update_yaxes(showgrid=True, gridcolor=C_BORDER)
+                      title={"font": {"size": 13, "color": C_TEXT2, "family": _FONT}},
+                      **PLOT)
+    plot_legend(fig)
     return fig
 
 
 # ── Helpers descriptivas ──────────────────────────────────
 def _cat_fig(col, df_cons, df_scores, score_col, fc, tn):
-    _pe = {**PLOT,"margin":{"t":30,"b":20,"l":30,"r":10}}
-    _pb = {**PLOT,"margin":{"t":20,"b":55,"l":50,"r":10}}
+    _pe = {**PLOT, "margin": {"t": 30, "b": 20, "l": 30, "r": 10}}
+    _pb = {**PLOT, "margin": {"t": 20, "b": 55, "l": 50, "r": 10}}
     def empty(m): return go.Figure().update_layout(title=m, **_pe)
     if df_cons.empty or col not in df_cons.columns: return empty(f"'{col}' no disponible.")
     n = int(tn) if int(tn) < 999999 else len(df_scores)
@@ -769,17 +743,17 @@ def _cat_fig(col, df_cons, df_scores, score_col, fc, tn):
     dff = df_cons[df_cons["CLIENTE_ID"].isin(top_ids)]
     if fc is not None: dff = dff[dff["CLIENTE_ID"] == fc]
     if dff.empty: return empty("Sin datos.")
-    dff = dff[[col,"CLIENTE_ID"]].copy()
+    dff = dff[[col, "CLIENTE_ID"]].copy()
     dff[col] = dff[col].astype(str).str.strip()
-    dff = dff[~dff[col].isin(["nan","<NA>","None",""])]
-    if dff.empty: return empty("Sin valores válidos.")
+    dff = dff[~dff[col].isin(["nan", "<NA>", "None", ""])]
+    if dff.empty: return empty("Sin valores validos.")
     counts = (dff.groupby(col, observed=True)["CLIENTE_ID"].nunique()
-                 .reset_index().rename(columns={"CLIENTE_ID":"clientes"})
+                 .reset_index().rename(columns={"CLIENTE_ID": "clientes"})
                  .sort_values("clientes", ascending=False))
     fig = px.bar(counts, x=col, y="clientes", color=col,
                  color_discrete_sequence=BAR_COLORS,
-                 labels={col:f"Código {col}","clientes":"Clientes únicos"})
-    fig.update_traces(marker_line_width=0)
+                 labels={col: col.capitalize(), "clientes": "Clientes unicos"})
+    fig.update_traces(marker_line_width=0, marker_opacity=0.9)
     fig.update_xaxes(type="category", tickangle=-35, showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor=C_BORDER)
     fig.update_layout(showlegend=False, **_pb)
@@ -787,29 +761,29 @@ def _cat_fig(col, df_cons, df_scores, score_col, fc, tn):
 
 
 def _map_fig(df_geo, df_scores, score_col, fc, tn):
-    _pm = {**PLOT,"margin":{"t":10,"b":10,"l":10,"r":10}}
-    def kpi(label, val, color):
-        return [html.Span(label,style={"color":C_SUBTEXT,"fontSize":"12px","display":"block"}),
-                html.Span(str(val),style={"color":color,"fontWeight":"700","fontSize":"22px"})]
-    def empty_m(m): return go.Figure().update_layout(title=m,**_pm)
+    _pm = {**PLOT, "margin": {"t": 10, "b": 10, "l": 10, "r": 10}}
+    def kpi(label, val):
+        return [html.Span(label, className="kpi-label"),
+                html.Span(str(val), className="kpi-value")]
+    def empty_m(m): return go.Figure().update_layout(title=m, **_pm)
     if df_geo.empty:
-        return empty_m("Sin datos de geolocalización."), kpi("Total clientes","–",C_NAVY), kpi("Sin dirección","–",C_RED)
+        return empty_m("Sin datos de geolocalizacion."), kpi("Total clientes", "--"), kpi("Sin direccion", "--")
     n = int(tn) if int(tn) < 999999 else len(df_scores)
     top_ids = df_scores.sort_values(score_col, ascending=False).head(n)["producto"].tolist()
     dff = df_geo[df_geo["producto"].isin(top_ids)].copy()
     if fc is not None: dff = dff[dff["producto"] == fc]
     total   = len(dff)
     sin_dir = int((dff["lat"].isna() | dff["lon"].isna()).sum())
-    dff_p   = dff.dropna(subset=["lat","lon"]).copy()
+    dff_p   = dff.dropna(subset=["lat", "lon"]).copy()
     if dff_p.empty:
-        return empty_m("Sin coordenadas válidas."), kpi("Total clientes",total,C_NAVY), kpi("Sin dirección",sin_dir,C_RED)
+        return empty_m("Sin coordenadas validas."), kpi("Total clientes", total), kpi("Sin direccion", sin_dir)
     dff_p["producto_str"] = dff_p["producto"].astype(int).astype(str)
     fig = px.scatter_map(dff_p, lat="lat", lon="lon", hover_name="producto_str",
-                         color_discrete_sequence=[C_BLUE], zoom=11, height=400,
-                         map_style="open-street-map")
-    fig.update_traces(marker={"size":9,"opacity":0.85})
+                         color_discrete_sequence=[C_ORANGE], zoom=11, height=400,
+                         map_style="carto-darkmatter")
+    fig.update_traces(marker={"size": 9, "opacity": 0.9})
     fig.update_layout(**_pm)
-    return fig, kpi("Total clientes",total,C_NAVY), kpi("Sin dirección",sin_dir,C_RED)
+    return fig, kpi("Total clientes", total), kpi("Sin direccion", sin_dir)
 
 
 # ── Tab 2: descriptivas no supervisado ───────────────────
@@ -871,14 +845,15 @@ def mapa_sup(fc, tn):
 def confmat(tab):
     if tab != "tab4": return go.Figure()
     fig = go.Figure(go.Heatmap(
-        z=[[923,165],[426,300]], x=["Normal (0)","Anómalo (1)"], y=["Normal (0)","Anómalo (1)"],
-        text=[["TN = 923","FP = 165"],["FN = 426","TP = 300"]],
+        z=[[923, 165], [426, 300]],
+        x=["Normal (0)", "Anomalo (1)"], y=["Normal (0)", "Anomalo (1)"],
+        text=[["TN = 923", "FP = 165"], ["FN = 426", "TP = 300"]],
         texttemplate="%{text}",
-        colorscale=[[0,"#1B5E7E"],[0.35,"#4A8BA8"],[0.65,"#E8B649"],[1,"#FF8C1A"]],
-        showscale=True, textfont={"size":15,"color":"white"}, hoverongaps=False))
-    fig.update_layout(xaxis_title="Predicción", yaxis_title="Valor Real",
-                      yaxis_autorange="reversed", xaxis={"side":"bottom"},
-                      **{**PLOT,"margin":{"t":20,"b":50,"l":70,"r":20}})
+        colorscale=[[0, C_NAVY_DEEP], [0.35, C_NAVY], [0.65, C_GOLD], [1, C_ORANGE]],
+        showscale=True, textfont={"size": 15, "color": "white"}, hoverongaps=False))
+    fig.update_layout(xaxis_title="Prediccion", yaxis_title="Valor Real",
+                      yaxis_autorange="reversed", xaxis={"side": "bottom"},
+                      **{**PLOT, "margin": {"t": 20, "b": 50, "l": 70, "r": 20}})
     return fig
 
 
@@ -898,18 +873,19 @@ def roc(tab):
             auc_val = float(roc_data.get("auc",roc_data.get("AUC",np.trapz(tpr,fpr))))
         else: return empty("Formato no reconocido.")
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=fpr,y=tpr,mode="lines",name=f"LightGBM (AUC={auc_val:.3f})",
-                                 line={"color":C_BLUE,"width":2.5},
-                                 fill="tozeroy",fillcolor="rgba(30,111,165,0.08)"))
-        fig.add_trace(go.Scatter(x=[0,1],y=[0,1],mode="lines",name="Clasificador aleatorio",
-                                 line={"color":C_SUBTEXT,"dash":"dash","width":1.5}))
+        fig.add_trace(go.Scatter(x=fpr, y=tpr, mode="lines", name=f"LightGBM (AUC={auc_val:.3f})",
+                                 line={"color": C_ORANGE, "width": 2.5},
+                                 fill="tozeroy", fillcolor="rgba(255,140,26,0.08)"))
+        fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines", name="Aleatorio",
+                                 line={"color": C_TEXT3, "dash": "dash", "width": 1.5}))
         fig.update_layout(
-            xaxis_title="Tasa de Falsos Positivos (1 – Especificidad)",
-            yaxis_title="Tasa de Verdaderos Positivos (Sensibilidad)",
-            legend={"x":0.55,"y":0.08,"bgcolor":"rgba(255,255,255,0.85)",
-                    "bordercolor":C_BORDER,"borderwidth":1},
-            xaxis={"showgrid":True,"gridcolor":C_BORDER,"range":[0,1]},
-            yaxis={"showgrid":True,"gridcolor":C_BORDER,"range":[0,1]}, **PLOT)
+            xaxis_title="Tasa de Falsos Positivos",
+            yaxis_title="Tasa de Verdaderos Positivos",
+            xaxis={"showgrid": True, "gridcolor": C_BORDER, "range": [0, 1]},
+            yaxis={"showgrid": True, "gridcolor": C_BORDER, "range": [0, 1]},
+            **PLOT)
+        plot_legend(fig)
+        fig.update_layout(legend={"x": 0.55, "y": 0.08})
         return fig
     except Exception as ex: return empty(f"Error: {ex}")
 
@@ -932,22 +908,27 @@ def mahalanobis(cliente_id, tab):
     md,es_an,fd,fval = entry["mah_dist"],entry["es_anomalo"],entry["filter_desc"],entry["fraud_score"]
     et = (ids_g == cliente_id)
     fig = go.Figure()
-    nm = (~es_an)&(~et)
-    if nm.any(): fig.add_trace(go.Scatter(x=X[nm,0],y=X[nm,1],mode="markers",name="Normal",
-                                           opacity=0.75,marker={"color":"royalblue","size":8,"line":{"color":"black","width":0.5}}))
-    am = es_an&(~et)
-    if am.any(): fig.add_trace(go.Scatter(x=X[am,0],y=X[am,1],mode="markers",name="Anómalo grupo (>2σ)",
-                                           opacity=0.85,marker={"color":"crimson","size":9,"line":{"color":"black","width":0.5}}))
-    if et.any(): fig.add_trace(go.Scatter(x=X[et,0],y=X[et,1],mode="markers+text",
-                                           name=f"Cliente {cliente_id}",
-                                           text=[str(int(cliente_id))]*int(et.sum()),
-                                           textposition="top right",
-                                           textfont={"size":10,"color":"darkgoldenrod"},
-                                           marker={"color":"gold","size":14,"symbol":"star",
-                                                   "line":{"color":"darkorange","width":1.5}}))
-    ax0,ax1 = float(X.min())*0.95, float(X.max())*1.05
-    fig.add_trace(go.Scatter(x=[ax0,ax1],y=[ax0,ax1],mode="lines",name="y = x",
-                             line={"color":"gray","dash":"dash","width":1.5}))
+    nm = (~es_an) & (~et)
+    if nm.any(): fig.add_trace(go.Scatter(
+        x=X[nm, 0], y=X[nm, 1], mode="markers", name="Normal",
+        opacity=0.75, marker={"color": C_STEEL, "size": 8,
+                              "line": {"color": C_BG2, "width": 0.5}}))
+    am = es_an & (~et)
+    if am.any(): fig.add_trace(go.Scatter(
+        x=X[am, 0], y=X[am, 1], mode="markers", name="Anomalo grupo (>2s)",
+        opacity=0.85, marker={"color": C_RED, "size": 9,
+                              "line": {"color": C_BG2, "width": 0.5}}))
+    if et.any(): fig.add_trace(go.Scatter(
+        x=X[et, 0], y=X[et, 1], mode="markers+text",
+        name=f"Cliente {cliente_id}",
+        text=[str(int(cliente_id))] * int(et.sum()),
+        textposition="top right",
+        textfont={"size": 10, "color": C_GOLD},
+        marker={"color": C_GOLD, "size": 14, "symbol": "star",
+                "line": {"color": C_ORANGE, "width": 1.5}}))
+    ax0, ax1 = float(X.min()) * 0.95, float(X.max()) * 1.05
+    fig.add_trace(go.Scatter(x=[ax0, ax1], y=[ax0, ax1], mode="lines", name="y = x",
+                             line={"color": C_TEXT3, "dash": "dash", "width": 1.5}))
     ve,ve2 = np.linalg.eigh(cov)
     o = ve.argsort()[::-1]; ve,ve2 = ve[o],ve2[:,o]
     tr = np.arctan2(*ve2[:,0][::-1])
@@ -955,14 +936,16 @@ def mahalanobis(cliente_id, tab):
     t = np.linspace(0,2*np.pi,200)
     ex = mu[0]+ae*np.cos(t)*np.cos(tr)-be*np.sin(t)*np.sin(tr)
     ey = mu[1]+ae*np.cos(t)*np.sin(tr)+be*np.sin(t)*np.cos(tr)
-    fig.add_trace(go.Scatter(x=ex,y=ey,mode="lines",name="2σ",line={"color":"forestgreen","width":2}))
+    fig.add_trace(go.Scatter(x=ex, y=ey, mode="lines", name="2s",
+                             line={"color": C_GREEN, "width": 2}))
     fig.update_layout(
-        title={"text":" | ".join(f"{k}: {v}" for k,v in fd.items()),"font":{"size":11}},
-        xaxis_title="Consumo año anterior", yaxis_title="Consumo año actual",
-        legend={"x":0.01,"y":0.99,"bgcolor":"rgba(255,255,255,0.85)","bordercolor":C_BORDER,
-                "borderwidth":1,"font":{"size":11}},
-        xaxis={"showgrid":True,"gridcolor":C_BORDER},
-        yaxis={"showgrid":True,"gridcolor":C_BORDER}, **_pm)
+        title={"text": " | ".join(f"{k}: {v}" for k, v in fd.items()),
+               "font": {"size": 11, "color": C_TEXT3}},
+        xaxis_title="Consumo periodo anterior", yaxis_title="Consumo periodo actual",
+        xaxis={"showgrid": True, "gridcolor": C_BORDER},
+        yaxis={"showgrid": True, "gridcolor": C_BORDER}, **_pm)
+    plot_legend(fig)
+    fig.update_layout(legend={"x": 0.01, "y": 0.99})
     dc = float(md[et].mean()) if et.any() else float("nan")
     fs = f"{fval:.4f}" if fval is not None else "N/A"
     label = (f"Cliente {cliente_id}  |  Fraud score: {fs}  |  "
