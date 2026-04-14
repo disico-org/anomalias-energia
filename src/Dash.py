@@ -3,7 +3,6 @@ from pathlib import Path
 import pickle
 import pandas as pd
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor as _TPE
 
 from dash import Dash, html, dcc, dash_table, Input, Output
 import plotly.express as px
@@ -62,17 +61,21 @@ def load_unsupervised(path):
     return df.groupby("producto", as_index=False)["score_no_supervisado"].max()
 
 
-def load_consumo(path):
+def load_consumo(path, valid_ids=None):
     wanted    = ["fecha","consumo","CLIENTE_ID","localidad","barrio",
                  "tipo_producto","categoria","subcategoria",
                  "consumo_prev","consumo_actual","mes"]
-    available = pd.read_parquet(path, columns=None).columns.tolist()
-    cols = [c for c in wanted if c in available]
-    df = pd.read_parquet(path, columns=cols).copy()
+    # Leer solo columnas disponibles sin cargar datos completos primero
+    import pyarrow.parquet as pq
+    schema = pq.read_schema(path)
+    cols = [c for c in wanted if c in schema.names]
+    df = pd.read_parquet(path, columns=cols)
     df["fecha"]      = pd.to_datetime(df["fecha"],      errors="coerce")
     df["consumo"]    = pd.to_numeric(df["consumo"],     errors="coerce")
     df["CLIENTE_ID"] = pd.to_numeric(df["CLIENTE_ID"],  errors="coerce")
     df = df.dropna(subset=["fecha","consumo","CLIENTE_ID"])
+    if valid_ids is not None:
+        df = df[df["CLIENTE_ID"].isin(valid_ids)]
     for col in ["localidad","barrio","tipo_producto","categoria","subcategoria"]:
         if col in df.columns:
             df[col] = (df[col].astype(str).str.strip()
@@ -87,9 +90,10 @@ def load_roc(path):
     except Exception as e:         return None, str(e)
 
 
-def load_geo(path):
+def load_geo(path, valid_ids=None):
     try:
-        df = pd.read_csv(path)
+        df = pd.read_csv(path, usecols=lambda c: c.strip().lower() in
+                         {"producto","cliente_id","clientes_id","lat","lon"})
         df.columns = [c.strip().lower() for c in df.columns]
         for alt in ["cliente_id","clientes_id"]:
             if alt in df.columns and "producto" not in df.columns:
@@ -97,15 +101,21 @@ def load_geo(path):
         df["producto"] = pd.to_numeric(df["producto"], errors="coerce")
         df["lat"]      = pd.to_numeric(df["lat"],      errors="coerce")
         df["lon"]      = pd.to_numeric(df["lon"],      errors="coerce")
+        if valid_ids is not None:
+            df = df[df["producto"].isin(valid_ids)]
         return df, None
     except Exception as e:
         return pd.DataFrame(), str(e)
 
 
-def load_resultados(path_r1, path_last):
+def load_resultados(path_r1, path_last, valid_ids=None):
     try:
         r1   = pd.read_parquet(path_r1) if str(path_r1).endswith(".parquet") else pd.read_csv(path_r1)
+        if valid_ids is not None and "CLIENTE_ID" in r1.columns:
+            r1 = r1[r1["CLIENTE_ID"].isin(valid_ids)]
         last = pd.read_csv(path_last)
+        if valid_ids is not None and "CLIENTE_ID" in last.columns:
+            last = last[last["CLIENTE_ID"].isin(valid_ids)]
         for d in [r1, last]:
             if "year_month" in d.columns:
                 d["year_month"] = (pd.to_datetime(d["year_month"], errors="coerce")
@@ -116,9 +126,12 @@ def load_resultados(path_r1, path_last):
 
 
 # =========================================================
-# 3) CARGA INICIAL
+# 3) CARGA INICIAL (optimizada para memoria)
 # =========================================================
-df_sup = df_unsup = df_consumo = pd.DataFrame()
+import gc as _gc
+
+print("[Dash] Cargando Excel de scores...", flush=True)
+df_sup = df_unsup = pd.DataFrame()
 _load_errors = []
 
 try:
@@ -131,41 +144,49 @@ try:
 except Exception as e:
     _load_errors.append(f"no supervisado: {e}")
 
-try:
-    df_consumo = load_consumo(FILE_CONSUMO)
-except Exception as e:
-    _load_errors.append(f"consumo: {e}")
-
 DATA_OK    = not (df_sup.empty and df_unsup.empty)
 LOAD_ERROR = "\n".join(_load_errors)
 
-with _TPE(max_workers=3) as _ex:
-    _f_roc = _ex.submit(load_roc,        FILE_ROC)
-    _f_geo = _ex.submit(load_geo,        FILE_GEO)
-    _f_res = _ex.submit(load_resultados, FILE_RESULTADOS_1, FILE_RESDF_LAST)
-    roc_data,   roc_error  = _f_roc.result()
-    df_geo_raw, geo_error  = _f_geo.result()
-    df_res1, df_res_last, res_error = _f_res.result()
-
-# IDs únicos por método (sin merge entre sí)
+# Extraer IDs del top 5000 para filtrar archivos grandes
 ids_sup   = sorted(df_sup["producto"].dropna().astype(int).tolist())   if DATA_OK else []
 ids_unsup = sorted(df_unsup["producto"].dropna().astype(int).tolist()) if DATA_OK else []
+_all_ids  = set(ids_sup) | set(ids_unsup) if DATA_OK else None
 
-# Pre-filtrar consumo y geo independientemente por método
-if DATA_OK:
-    _s_ids = set(ids_sup);   _u_ids = set(ids_unsup)
-    if not df_consumo.empty and "CLIENTE_ID" in df_consumo.columns:
-        df_consumo_sup   = df_consumo[df_consumo["CLIENTE_ID"].isin(_s_ids)].copy()
-        df_consumo_unsup = df_consumo[df_consumo["CLIENTE_ID"].isin(_u_ids)].copy()
+# Cargar consumo filtrado por IDs conocidos
+print("[Dash] Cargando consumo (filtrado)...", flush=True)
+df_consumo_sup = df_consumo_unsup = pd.DataFrame()
+try:
+    df_consumo = load_consumo(FILE_CONSUMO, valid_ids=_all_ids)
+    if DATA_OK and not df_consumo.empty and "CLIENTE_ID" in df_consumo.columns:
+        _s_ids = set(ids_sup);   _u_ids = set(ids_unsup)
+        df_consumo_sup   = df_consumo[df_consumo["CLIENTE_ID"].isin(_s_ids)]
+        df_consumo_unsup = df_consumo[df_consumo["CLIENTE_ID"].isin(_u_ids)]
     else:
-        df_consumo_sup = df_consumo_unsup = df_consumo.copy()
-    df_geo_sup   = df_geo_raw[df_geo_raw["producto"].isin(_s_ids)].copy() if not df_geo_raw.empty else pd.DataFrame()
-    df_geo_unsup = df_geo_raw[df_geo_raw["producto"].isin(_u_ids)].copy() if not df_geo_raw.empty else pd.DataFrame()
-else:
-    df_consumo_sup = df_consumo_unsup = df_consumo.copy()
-    df_geo_sup     = df_geo_unsup     = df_geo_raw.copy()
+        df_consumo_sup = df_consumo_unsup = df_consumo
+    del df_consumo; _gc.collect()
+except Exception as e:
+    _load_errors.append(f"consumo: {e}")
+LOAD_ERROR = "\n".join(_load_errors)
 
-df_res1_full = df_res1.copy()
+# Cargar ROC (pequeño, 18KB)
+print("[Dash] Cargando ROC...", flush=True)
+roc_data, roc_error = load_roc(FILE_ROC)
+
+# Cargar geo filtrado por IDs
+print("[Dash] Cargando georeferencias (filtrado)...", flush=True)
+df_geo_raw, geo_error = load_geo(FILE_GEO, valid_ids=_all_ids)
+if DATA_OK and not df_geo_raw.empty:
+    _s_ids = set(ids_sup);   _u_ids = set(ids_unsup)
+    df_geo_sup   = df_geo_raw[df_geo_raw["producto"].isin(_s_ids)]
+    df_geo_unsup = df_geo_raw[df_geo_raw["producto"].isin(_u_ids)]
+else:
+    df_geo_sup = df_geo_unsup = df_geo_raw
+del df_geo_raw; _gc.collect()
+
+# Cargar resultados filtrados por IDs
+print("[Dash] Cargando resultados (filtrado)...", flush=True)
+df_res1, df_res_last, res_error = load_resultados(
+    FILE_RESULTADOS_1, FILE_RESDF_LAST, valid_ids=_all_ids)
 
 if not df_res_last.empty and "CLIENTE_ID" in df_res_last.columns:
     _sc = "fraud_score" if "fraud_score" in df_res_last.columns else df_res_last.columns[0]
@@ -182,7 +203,7 @@ def _precompute_mahalanobis(df_r1, df_last):
     has_ym= "year_month" in df_r1.columns and "year_month" in df_last.columns
     kc    = av_gc + (["year_month"] if has_ym else [])
     need  = [c for c in kc+["CLIENTE_ID","consumo_prev","consumo_actual"] if c in df_r1.columns]
-    r1    = df_r1[need].copy()
+    r1    = df_r1[need]
     for c in kc:
         r1[c]      = r1[c].astype(str)
         df_last[c] = df_last[c].astype(str)
@@ -215,28 +236,26 @@ def _precompute_mahalanobis(df_r1, df_last):
     return cache
 
 # ── Cargar o calcular cache de Mahalanobis ─────────────────
-def _load_or_compute_mahalanobis(df_r1, df_last):
-    """
-    Intenta cargar cache pre-calculado, si no existe lo calcula.
-    """
-    # Intentar cargar cache si existe
+def _load_or_compute_mahalanobis():
     if FILE_MAH_CACHE.exists():
         try:
-            print(f"Cargando cache de Mahalanobis desde {FILE_MAH_CACHE}…", flush=True)
+            print("[Dash] Cargando cache de Mahalanobis...", flush=True)
             with open(FILE_MAH_CACHE, "rb") as f:
                 cache = pickle.load(f)
-            print(f"✓ Cache cargado: {len(cache)} clientes.", flush=True)
+            print(f"[Dash] ✓ Cache cargado: {len(cache)} clientes.", flush=True)
             return cache
         except Exception as e:
-            print(f"⚠ Error cargando cache: {e}. Recalculando…", flush=True)
-    
-    # Calcular si no hay cache o está corrupto
-    print("Pre-computando Mahalanobis…", flush=True)
-    cache = _precompute_mahalanobis(df_r1, df_last)
-    print(f"✓ Cálculo completado: {len(cache)} clientes.", flush=True)
+            print(f"[Dash] ⚠ Error cargando cache: {e}. Recalculando…", flush=True)
+    print("[Dash] Pre-computando Mahalanobis…", flush=True)
+    cache = _precompute_mahalanobis(df_res1, df_res_last)
+    print(f"[Dash] ✓ Cálculo completado: {len(cache)} clientes.", flush=True)
     return cache
 
-_MAH_CACHE = _load_or_compute_mahalanobis(df_res1_full.copy(), df_res_last.copy())
+_MAH_CACHE = _load_or_compute_mahalanobis()
+
+# Liberar DataFrames de resultados (ya no se necesitan)
+del df_res1, df_res_last; _gc.collect()
+print("[Dash] ✓ Carga completa.", flush=True)
 
 # =========================================================
 # 4) PALETA SW DISICO
