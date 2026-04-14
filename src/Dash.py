@@ -22,8 +22,6 @@ FILE_UNSUP        = DATA_PATH / "top_5000_no_supervisado.xlsx"
 FILE_CONSUMO      = DATA_PATH / "consumo_011223_01062025_filtrado.parquet"
 FILE_ROC          = DATA_PATH / "informacion_curva_roc.pickle"
 FILE_GEO          = DATA_PATH / "georeferencias.csv"
-FILE_RESULTADOS_1 = DATA_PATH / "resultados_1.parquet"
-FILE_RESDF_LAST   = DATA_PATH / "resultados_df_last.csv"
 FILE_MAH_CACHE    = CACHE_PATH / "mahalanobis_cache.pkl"
 
 # =========================================================
@@ -108,22 +106,6 @@ def load_geo(path, valid_ids=None):
         return pd.DataFrame(), str(e)
 
 
-def load_resultados(path_r1, path_last, valid_ids=None):
-    try:
-        r1   = pd.read_parquet(path_r1) if str(path_r1).endswith(".parquet") else pd.read_csv(path_r1)
-        if valid_ids is not None and "CLIENTE_ID" in r1.columns:
-            r1 = r1[r1["CLIENTE_ID"].isin(valid_ids)]
-        last = pd.read_csv(path_last)
-        if valid_ids is not None and "CLIENTE_ID" in last.columns:
-            last = last[last["CLIENTE_ID"].isin(valid_ids)]
-        for d in [r1, last]:
-            if "year_month" in d.columns:
-                d["year_month"] = (pd.to_datetime(d["year_month"], errors="coerce")
-                                     .dt.strftime("%Y-%m-%d"))
-        return r1, last, None
-    except Exception as e:
-        return pd.DataFrame(), pd.DataFrame(), str(e)
-
 
 # =========================================================
 # 3) CARGA INICIAL (optimizada para memoria)
@@ -183,82 +165,30 @@ else:
     df_geo_sup = df_geo_unsup = df_geo_raw
 del df_geo_raw; _gc.collect()
 
-# Cargar resultados filtrados por IDs
-print("[Dash] Cargando resultados (filtrado)...", flush=True)
-df_res1, df_res_last, res_error = load_resultados(
-    FILE_RESULTADOS_1, FILE_RESDF_LAST, valid_ids=_all_ids)
-
-if not df_res_last.empty and "CLIENTE_ID" in df_res_last.columns:
-    _sc = "fraud_score" if "fraud_score" in df_res_last.columns else df_res_last.columns[0]
-    _mah_ids_ordered = (df_res_last.sort_values(_sc, ascending=False)["CLIENTE_ID"]
-                        .drop_duplicates().astype(int).tolist())
+# ── Mahalanobis: solo desde cache pre-computado ───────────
+# No cargar resultados_1.parquet ni resultados_df_last.csv en runtime
+# (ahorra ~1.5 GB RAM). Si no hay cache, la sección queda vacía.
+_MAH_CACHE = {}
+_mah_ids_ordered = []
+if FILE_MAH_CACHE.exists():
+    try:
+        print("[Dash] Cargando cache de Mahalanobis...", flush=True)
+        with open(FILE_MAH_CACHE, "rb") as f:
+            _MAH_CACHE = pickle.load(f)
+        _mah_ids_ordered = sorted(_MAH_CACHE.keys(),
+                                  key=lambda c: -(_MAH_CACHE[c].get("fraud_score") or 0))
+        print(f"[Dash] ✓ Cache Mahalanobis: {len(_MAH_CACHE)} clientes.", flush=True)
+    except Exception as e:
+        print(f"[Dash] ⚠ Error cargando cache Mahalanobis: {e}. Sección deshabilitada.", flush=True)
+        _MAH_CACHE = {}
 else:
-    _mah_ids_ordered = ids_unsup
+    print("[Dash] ℹ Sin cache Mahalanobis. Ejecutar scripts/precompute_mahalanobis.py para habilitar.", flush=True)
 
-# ── Pre-cómputo Mahalanobis ────────────────────────────────
-def _precompute_mahalanobis(df_r1, df_last):
-    if df_r1.empty or df_last.empty: return {}
-    GC    = ["localidad","barrio","tipo_producto","categoria","subcategoria"]
-    av_gc = [c for c in GC if c in df_r1.columns]
-    has_ym= "year_month" in df_r1.columns and "year_month" in df_last.columns
-    kc    = av_gc + (["year_month"] if has_ym else [])
-    need  = [c for c in kc+["CLIENTE_ID","consumo_prev","consumo_actual"] if c in df_r1.columns]
-    r1    = df_r1[need]
-    for c in kc:
-        r1[c]      = r1[c].astype(str)
-        df_last[c] = df_last[c].astype(str)
-    r1["_gk"] = r1[kc].agg("||".join, axis=1)
-    clean     = r1.dropna(subset=["consumo_prev","consumo_actual"])
-    grouped   = {k:(g[["consumo_prev","consumo_actual"]].values, g["CLIENTE_ID"].values)
-                 for k,g in clean.groupby("_gk", sort=False)}
-    fc = "fraud_score" if "fraud_score" in df_last.columns else None
-    seen, cache = {}, {}
-    for _, row in df_last.iterrows():
-        cid = int(row["CLIENTE_ID"])
-        if cid in cache: continue
-        key = "||".join(str(row[c]) for c in kc)
-        if key in seen:
-            ge = seen[key]
-        else:
-            pair = grouped.get(key)
-            if pair is None: continue
-            X, ids = pair
-            if X.shape[0] < 2: continue
-            mu  = X.mean(axis=0)
-            cov = np.cov(X, rowvar=False, ddof=0)
-            if np.linalg.det(cov) == 0: cov += np.eye(2)*1e-6
-            inv = np.linalg.inv(cov)
-            md  = np.sqrt(((X-mu)@inv*(X-mu)).sum(axis=1))
-            ge  = {"X":X,"ids_group":ids,"mu":mu,"cov":cov,"mah_dist":md,
-                   "es_anomalo":md>2,"filter_desc":{c:row[c] for c in kc}}
-            seen[key] = ge
-        cache[cid] = {**ge, "fraud_score": float(row[fc]) if fc else None}
-    return cache
-
-# ── Cargar o calcular cache de Mahalanobis ─────────────────
-def _load_or_compute_mahalanobis():
-    if FILE_MAH_CACHE.exists():
-        try:
-            print("[Dash] Cargando cache de Mahalanobis...", flush=True)
-            with open(FILE_MAH_CACHE, "rb") as f:
-                cache = pickle.load(f)
-            print(f"[Dash] ✓ Cache cargado: {len(cache)} clientes.", flush=True)
-            return cache
-        except Exception as e:
-            print(f"[Dash] ⚠ Error cargando cache: {e}. Recalculando…", flush=True)
-    print("[Dash] Pre-computando Mahalanobis…", flush=True)
-    cache = _precompute_mahalanobis(df_res1, df_res_last)
-    print(f"[Dash] ✓ Cálculo completado: {len(cache)} clientes.", flush=True)
-    return cache
-
-_MAH_CACHE = _load_or_compute_mahalanobis()
-
-# Liberar DataFrames de resultados (ya no se necesitan)
-del df_res1, df_res_last; _gc.collect()
+_gc.collect()
 print("[Dash] ✓ Carga completa.", flush=True)
 
 # =========================================================
-# 4) PALETA SW DISICO — Dark Theme (Design System Biblia v3.0)
+# 4) PALETA SW DISICO — Light Theme (Design System Biblia v3.0)
 # =========================================================
 _FONT = "ui-sans-serif, system-ui, -apple-system, sans-serif"
 _MONO = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
@@ -273,30 +203,30 @@ C_GOLD      = "#E8B649"
 C_GOLD_LT   = "#F5D080"
 C_ORANGE    = "#FF8C1A"
 
-# Superficies Dark
-C_BG        = "#080C10"
-C_BG1       = "#0E1519"
-C_BG2       = "#141C22"
-C_BG3       = "#1C2730"
-C_BG4       = "#232E38"
-C_BORDER    = "rgba(74,139,168,0.18)"
-C_BORDER_HI = "rgba(74,139,168,0.40)"
+# Superficies Light
+C_BG        = "#F4F3F0"
+C_BG1       = "#FAFAFA"
+C_BG2       = "#FFFFFF"
+C_BG3       = "#EDF2F4"
+C_BG4       = "#D8E2E8"
+C_BORDER    = "rgba(13,53,72,0.10)"
+C_BORDER_HI = "rgba(13,53,72,0.22)"
 
 # Texto
-C_TEXT      = "#E8EDF2"
-C_TEXT2     = "#8EA8BC"
-C_TEXT3     = "#4E6B7E"
+C_TEXT      = "#0D1E28"
+C_TEXT2     = "#3D6478"
+C_TEXT3     = "#7A9BAD"
 
 # Semánticos
 C_RED       = "#EF476F"
 C_GREEN     = "#06D6A0"
 C_BLUE      = C_STEEL
 
-# Colores de método — sutiles para dark theme
+# Colores de método
 C_SUP_ACCENT   = C_STEEL      # acento supervisado
 C_UNSUP_ACCENT = C_GOLD       # acento no supervisado
 
-# Paleta de gráficos — vibrante sobre fondo oscuro
+# Paleta de gráficos
 BAR_COLORS = [
     "#4A8BA8",  # Steel
     "#FF8C1A",  # Orange
@@ -313,7 +243,7 @@ BAR_COLORS = [
 # ── Tipografía ─────────────────────────────────────────────
 T_H1   = {"fontSize": "22px", "fontWeight": "700", "color": C_TEXT,
           "fontFamily": _FONT, "letterSpacing": "-0.01em"}
-T_H2   = {"fontSize": "14px", "fontWeight": "700", "color": "white",
+T_H2   = {"fontSize": "14px", "fontWeight": "700", "color": "#FFFFFF",
           "fontFamily": _FONT, "letterSpacing": "0.02em"}
 T_H3   = {"fontSize": "14px", "fontWeight": "600", "color": C_TEXT,
           "fontFamily": _FONT}
@@ -327,7 +257,7 @@ LABEL = {"color": C_TEXT3, "fontSize": "11px", "fontWeight": "600",
          "marginBottom": "6px", "display": "block", "fontFamily": _FONT}
 DROP  = {"fontSize": "13px", "fontFamily": _FONT}
 
-# ── Estilos de plot (dark) ─────────────────────────────────
+# ── Estilos de plot ────────────────────────────────────────
 PLOT = dict(
     paper_bgcolor=C_BG2, plot_bgcolor=C_BG1,
     font={"color": C_TEXT2, "family": _FONT, "size": 12},
@@ -367,9 +297,9 @@ def card_wrap(children, **extra):
 
 
 def plot_legend(fig):
-    """Aplica estilo de leyenda dark consistente."""
+    """Aplica estilo de leyenda consistente."""
     fig.update_layout(legend={
-        "bgcolor": "rgba(14,21,25,0.9)",
+        "bgcolor": "rgba(255,255,255,0.95)",
         "bordercolor": C_BORDER, "borderwidth": 1,
         "font": {"size": 11, "color": C_TEXT2, "family": _FONT},
     })
@@ -380,7 +310,7 @@ def plot_legend(fig):
 # =========================================================
 
 def _data_table(tid, columns, data=None, **kw):
-    """DataTable con estilo dark consistente (CSS maneja colores)."""
+    """DataTable con estilo consistente (CSS maneja colores)."""
     return dash_table.DataTable(
         id=tid, columns=columns, data=data or [],
         page_size=kw.get("page_size", 12),
@@ -606,14 +536,14 @@ app.layout = html.Div(
     children=[
         # ── Topbar premium con blur ──
         html.Div(className="topbar", style={
-            "background": "rgba(8,12,16,0.88)", "padding": "0 28px",
+            "background": "rgba(255,255,255,0.92)", "padding": "0 28px",
             "display": "flex", "alignItems": "center", "justifyContent": "space-between",
             "height": "56px",
         }, children=[
             html.Div(style={"display": "flex", "alignItems": "center", "gap": "12px"}, children=[
                 html.Div(className="topbar-dot"),
                 html.Span("SW DISICO", style={
-                    "color": "white", "fontWeight": "800", "fontSize": "15px",
+                    "color": C_NAVY_DEEP, "fontWeight": "800", "fontSize": "15px",
                     "letterSpacing": "0.04em", "textTransform": "uppercase",
                     "fontFamily": _FONT}),
                 html.Span("Deteccion de Anomalias de Consumo Energetico", style={
@@ -780,7 +710,7 @@ def _map_fig(df_geo, df_scores, score_col, fc, tn):
     dff_p["producto_str"] = dff_p["producto"].astype(int).astype(str)
     fig = px.scatter_map(dff_p, lat="lat", lon="lon", hover_name="producto_str",
                          color_discrete_sequence=[C_ORANGE], zoom=11, height=400,
-                         map_style="carto-darkmatter")
+                         map_style="carto-positron")
     fig.update_traces(marker={"size": 9, "opacity": 0.9})
     fig.update_layout(**_pm)
     return fig, kpi("Total clientes", total), kpi("Sin direccion", sin_dir)
@@ -912,12 +842,12 @@ def mahalanobis(cliente_id, tab):
     if nm.any(): fig.add_trace(go.Scatter(
         x=X[nm, 0], y=X[nm, 1], mode="markers", name="Normal",
         opacity=0.75, marker={"color": C_STEEL, "size": 8,
-                              "line": {"color": C_BG2, "width": 0.5}}))
+                              "line": {"color": "white", "width": 0.5}}))
     am = es_an & (~et)
     if am.any(): fig.add_trace(go.Scatter(
         x=X[am, 0], y=X[am, 1], mode="markers", name="Anomalo grupo (>2s)",
         opacity=0.85, marker={"color": C_RED, "size": 9,
-                              "line": {"color": C_BG2, "width": 0.5}}))
+                              "line": {"color": "white", "width": 0.5}}))
     if et.any(): fig.add_trace(go.Scatter(
         x=X[et, 0], y=X[et, 1], mode="markers+text",
         name=f"Cliente {cliente_id}",

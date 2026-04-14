@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
    SW DISICO — Dashboard Design System
-   Dark Theme Premium · Micro-interactions · Aesthetic Loading
+   Light Theme Premium · Micro-interactions · Aesthetic Loading
    Basado en: SW-DISICO-Design-System-Biblia v3.0
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -16,16 +16,16 @@
   --orange:     #FF8C1A;
   --orange-dark:#C96800;
 
-  --bg:         #080C10;
-  --bg-1:       #0E1519;
-  --bg-2:       #141C22;
-  --bg-3:       #1C2730;
-  --bg-4:       #232E38;
-  --border:     rgba(74,139,168,0.18);
-  --border-hi:  rgba(74,139,168,0.40);
-  --text:       #E8EDF2;
-  --text-2:     #8EA8BC;
-  --text-3:     #4E6B7E;
+  --bg:         #F4F3F0;
+  --bg-1:       #FAFAFA;
+  --bg-2:       #FFFFFF;
+  --bg-3:       #EDF2F4;
+  --bg-4:       #D8E2E8;
+  --border:     rgba(13,53,72,0.10);
+  --border-hi:  rgba(13,53,72,0.22);
+  --text:       #0D1E28;
+  --text-2:     #3D6478;
+  --text-3:     #7A9BAD;
 
   --r-xs: 4px;
   --r-sm: 8px;
@@ -33,11 +33,11 @@
   --r-lg: 16px;
   --r-xl: 24px;
 
-  --shadow-1: 0 2px 8px rgba(0,0,0,0.35);
-  --shadow-2: 0 4px 24px rgba(0,0,0,0.5);
-  --shadow-3: 0 12px 48px rgba(0,0,0,0.65);
-  --shadow-glow: 0 0 32px rgba(255,140,26,0.18);
-  --shadow-glow-navy: 0 0 24px rgba(27,94,126,0.2);
+  --shadow-1: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-2: 0 4px 24px rgba(0,0,0,0.10);
+  --shadow-3: 0 12px 48px rgba(0,0,0,0.15);
+  --shadow-glow: 0 0 32px rgba(255,140,26,0.10);
+  --shadow-glow-navy: 0 0 24px rgba(27,94,126,0.08);
 
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -62,11 +62,11 @@ body {
 
 /* Scrollbar premium */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-track { background: var(--bg-1); }
 ::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--steel); }
+::-webkit-scrollbar-thumb:hover { background: var(--steel-light); }
 
-::selection { background: rgba(255,140,26,0.3); color: var(--text); }
+::selection { background: rgba(27,94,126,0.2); color: var(--text); }
 
 /* ── KEYFRAMES ─────────────────────────────────────────────────── */
 @keyframes fadeInUp {
@@ -135,7 +135,8 @@ body {
   z-index: 100;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hi);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   animation: fadeIn 0.6s ease;
 }
 
@@ -199,7 +200,7 @@ body {
   left: 18px;
   right: 18px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
 }
 
 /* ── CARD BODY (below title bar) ────────────────────────────────── */
