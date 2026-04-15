@@ -215,26 +215,37 @@ def _compute_mahalanobis(df_r1, df_last):
 
 def _load_mahalanobis():
     """Intenta cargar cache, si no existe computa desde archivos de datos."""
+    import traceback as _tb
     # 1. Intentar cache pre-computado
+    print(f"[Dash] Mahalanobis: cache path = {FILE_MAH_CACHE}", flush=True)
+    print(f"[Dash] Mahalanobis: cache existe = {FILE_MAH_CACHE.exists()}", flush=True)
     if FILE_MAH_CACHE.exists():
         try:
-            print("[Dash] Cargando cache de Mahalanobis...", flush=True)
             with open(FILE_MAH_CACHE, "rb") as f:
                 cache = pickle.load(f)
-            print(f"[Dash] ✓ Cache Mahalanobis: {len(cache)} clientes.", flush=True)
+            print(f"[Dash] ✓ Cache Mahalanobis cargado: {len(cache)} clientes.", flush=True)
             return cache
         except Exception as e:
             print(f"[Dash] ⚠ Error cargando cache: {e}", flush=True)
+            _tb.print_exc()
     # 2. Computar desde datos si existen
+    print(f"[Dash] Mahalanobis: resultados_1 path = {FILE_RESULTADOS_1}", flush=True)
+    print(f"[Dash] Mahalanobis: resultados_1 existe = {FILE_RESULTADOS_1.exists()}", flush=True)
+    print(f"[Dash] Mahalanobis: resultados_df_last path = {FILE_RESDF_LAST}", flush=True)
+    print(f"[Dash] Mahalanobis: resultados_df_last existe = {FILE_RESDF_LAST.exists()}", flush=True)
     if FILE_RESULTADOS_1.exists() and FILE_RESDF_LAST.exists():
         try:
             print("[Dash] Computando Mahalanobis desde datos...", flush=True)
             r1 = pd.read_parquet(FILE_RESULTADOS_1)
+            print(f"[Dash] Mahalanobis: r1 shape={r1.shape}, cols={list(r1.columns)[:6]}", flush=True)
             if _all_ids is not None and "CLIENTE_ID" in r1.columns:
                 r1 = r1[r1["CLIENTE_ID"].isin(_all_ids)]
+                print(f"[Dash] Mahalanobis: r1 filtrado={len(r1)} filas ({len(_all_ids)} IDs)", flush=True)
             last = pd.read_csv(FILE_RESDF_LAST)
+            print(f"[Dash] Mahalanobis: last shape={last.shape}, cols={list(last.columns)[:6]}", flush=True)
             if _all_ids is not None and "CLIENTE_ID" in last.columns:
                 last = last[last["CLIENTE_ID"].isin(_all_ids)]
+                print(f"[Dash] Mahalanobis: last filtrado={len(last)} filas", flush=True)
             for d in [r1, last]:
                 if "year_month" in d.columns:
                     d["year_month"] = pd.to_datetime(d["year_month"], errors="coerce").dt.strftime("%Y-%m-%d")
@@ -244,8 +255,9 @@ def _load_mahalanobis():
             return cache
         except Exception as e:
             print(f"[Dash] ⚠ Error computando Mahalanobis: {e}", flush=True)
+            _tb.print_exc()
     else:
-        print("[Dash] ℹ Sin archivos para Mahalanobis (resultados_1.parquet / resultados_df_last.csv).", flush=True)
+        print("[Dash] ℹ Sin archivos para Mahalanobis.", flush=True)
     return {}
 
 _MAH_CACHE = _load_mahalanobis()
