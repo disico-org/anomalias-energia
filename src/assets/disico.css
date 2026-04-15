@@ -694,13 +694,33 @@ input::placeholder {
   animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-/* Inputs individuales del login — estilos via style prop en Python */
-/* Focus ring para inputs del login */
-#login-user:focus,
-#login-pass:focus {
-  border-color: var(--navy) !important;
-  box-shadow: 0 0 0 3px rgba(27,94,126,0.12) !important;
-  outline: none !important;
+/* Campo de input nativo del login */
+.login-field {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.login-field--pass {
+  padding-right: 42px;
+}
+
+.login-field:focus {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(27,94,126,0.12);
+}
+
+.login-field::placeholder {
+  color: var(--text-3);
 }
 
 /* Botón ojo para contraseña */
@@ -713,13 +733,14 @@ input::placeholder {
   border: none;
   cursor: pointer;
   padding: 4px;
+  font-size: 16px;
   line-height: 1;
-  opacity: 0.5;
+  opacity: 0.45;
   transition: opacity var(--transition);
 }
 
 .login-eye-btn:hover {
-  opacity: 1;
+  opacity: 0.9;
 }
 
 .login-btn {
