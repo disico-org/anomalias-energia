@@ -699,15 +699,34 @@ def _login_layout():
                     "fontFamily": _FONT, "display": "block", "marginBottom": "6px"}),
                 dcc.Input(id="login-user", type="text",
                           placeholder="usuario o correo",
-                          className="login-input",
-                          style={"width": "100%", "marginBottom": "16px"}),
+                          debounce=False,
+                          style={"width": "100%", "padding": "10px 14px",
+                                 "fontSize": "13px", "fontFamily": _FONT,
+                                 "color": C_TEXT, "background": C_BG1,
+                                 "border": f"1px solid {C_BORDER}",
+                                 "borderRadius": "8px", "outline": "none",
+                                 "boxSizing": "border-box",
+                                 "marginBottom": "16px"}),
                 html.Label("Contraseña", style={
                     "color": C_TEXT2, "fontSize": "12px", "fontWeight": "600",
                     "fontFamily": _FONT, "display": "block", "marginBottom": "6px"}),
-                dcc.Input(id="login-pass", type="password",
-                          placeholder="••••••••",
-                          className="login-input",
-                          style={"width": "100%", "marginBottom": "20px"}),
+                # Wrapper relativo para superponer el botón eye
+                html.Div(style={"position": "relative", "marginBottom": "20px"}, children=[
+                    dcc.Input(id="login-pass", type="password",
+                              placeholder="••••••••",
+                              debounce=False,
+                              style={"width": "100%", "padding": "10px 44px 10px 14px",
+                                     "fontSize": "13px", "fontFamily": _FONT,
+                                     "color": C_TEXT, "background": C_BG1,
+                                     "border": f"1px solid {C_BORDER}",
+                                     "borderRadius": "8px", "outline": "none",
+                                     "boxSizing": "border-box"}),
+                    html.Button(id="toggle-pass", n_clicks=0,
+                                className="login-eye-btn",
+                                title="Mostrar/ocultar contraseña",
+                                children=html.Span("👁", style={"fontSize": "16px",
+                                                                "lineHeight": "1"})),
+                ]),
                 html.Button("Ingresar", id="login-btn", n_clicks=0,
                             className="login-btn"),
                 html.Div(id="login-error", style={
@@ -813,7 +832,7 @@ def _auth_guard():
             body = _flask_request.get_data(as_text=True)
             data = json.loads(body)
             outputs = str(data.get("output", ""))
-            if "login-error" in outputs or "login-redirect" in outputs:
+            if any(k in outputs for k in ("login-error", "login-redirect", "login-pass")):
                 return None
         except Exception:
             pass
@@ -860,6 +879,15 @@ def _do_login(n_clicks, user_input, password):
     if remaining <= 2:
         return f"Credenciales inválidas. {remaining} intentos restantes.", no_update
     return "Usuario o contraseña incorrectos.", no_update
+
+
+@app.callback(
+    Output("login-pass", "type"),
+    Input("toggle-pass", "n_clicks"),
+    prevent_initial_call=True,
+)
+def _toggle_password(n):
+    return "text" if n % 2 == 1 else "password"
 
 
 @app.callback(Output("tab_content","children"), Input("main_tabs","value"))
