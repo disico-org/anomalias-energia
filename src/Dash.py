@@ -775,9 +775,14 @@ def _dashboard_layout():
 
 # ── Serve layout (login o dashboard según sesión) ────────
 def _serve_layout():
-    if _AUTH_ENABLED and "user" not in _flask_session:
-        return _login_layout()
-    return _dashboard_layout()
+    if not _AUTH_ENABLED:
+        return _dashboard_layout()
+    try:
+        if "user" in _flask_session:
+            return _dashboard_layout()
+    except RuntimeError:
+        pass  # fuera de request context (init de Dash)
+    return _login_layout()
 
 app.layout = _serve_layout
 
