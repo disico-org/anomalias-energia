@@ -9,6 +9,13 @@ services:
       - DATA_PATH=/app/data
       - CACHE_PATH=/app/data/cache
       - PYTHONUNBUFFERED=1
+      - SECRET_KEY=${SECRET_KEY:-disico-prod-cambiar-esta-clave}
+      - AUTH_USER1_NAME=jorgerios
+      - AUTH_USER1_EMAIL=jorgerios@disico.com.co
+      - AUTH_USER1_PASS=SW*rios26
+      - AUTH_USER2_NAME=invitado26
+      - AUTH_USER2_EMAIL=
+      - AUTH_USER2_PASS=invitado@26*
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8050/"]

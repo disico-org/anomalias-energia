@@ -1,12 +1,19 @@
 import os
+import hmac
+import time as _time
 from pathlib import Path
+from collections import defaultdict as _defaultdict
 import pickle
 import pandas as pd
 import numpy as np
 
-from dash import Dash, html, dcc, dash_table, Input, Output
+from dash import Dash, html, dcc, dash_table, Input, Output, State, no_update
+from dash.exceptions import PreventUpdate
 import plotly.express as px
 import plotly.graph_objects as go
+from flask import (session as _flask_session,
+                   request as _flask_request,
+                   redirect as _flask_redirect)
 
 # =========================================================
 # 1) RUTAS
@@ -265,6 +272,37 @@ _mah_ids_ordered = sorted(_MAH_CACHE.keys(),
                           key=lambda c: -(_MAH_CACHE[c].get("fraud_score") or 0)) if _MAH_CACHE else []
 _gc.collect()
 print("[Dash] ✓ Carga completa.", flush=True)
+
+# =========================================================
+# 3b) AUTENTICACIÓN
+# =========================================================
+_AUTH_USERS = {}  # key (username/email lowercase) → {username, email, password}
+
+def _init_auth():
+    i = 1
+    users = []
+    while True:
+        name = os.environ.get(f"AUTH_USER{i}_NAME")
+        if not name:
+            break
+        pwd = os.environ.get(f"AUTH_USER{i}_PASS", "")
+        email = os.environ.get(f"AUTH_USER{i}_EMAIL", "")
+        users.append({"username": name, "email": email, "password": pwd})
+        i += 1
+    for u in users:
+        _AUTH_USERS[u["username"].strip().lower()] = u
+        if u["email"]:
+            _AUTH_USERS[u["email"].strip().lower()] = u
+    if users:
+        print(f"[Dash] ✓ Auth: {len(users)} usuarios configurados.", flush=True)
+    else:
+        print("[Dash] ℹ Auth deshabilitado (sin AUTH_USER*_NAME).", flush=True)
+
+_init_auth()
+_AUTH_ENABLED = bool(_AUTH_USERS)
+_FAIL_LOG = _defaultdict(list)  # ip → [timestamps]
+_MAX_FAILS = 5
+_LOCKOUT_SEC = 300
 
 # =========================================================
 # 4) PALETA SW DISICO — Light Theme (Design System Biblia v3.0)
@@ -609,6 +647,8 @@ tab4_layout = html.Div([
 # =========================================================
 app = Dash(__name__, suppress_callback_exceptions=True)
 app.title = "DISICO – Anomalias Energia"
+server = app.server
+server.secret_key = os.environ.get("SECRET_KEY", "dev-key-cambiar-en-produccion")
 
 # Favicon personalizado
 app.index_string = '''<!DOCTYPE html>
@@ -629,44 +669,188 @@ app.index_string = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-app.layout = html.Div(
-    style={"background": C_BG, "minHeight": "100vh", "fontFamily": _FONT},
-    children=[
-        # ── Topbar premium con blur ──
-        html.Div(className="topbar", style={
-            "background": "rgba(255,255,255,0.92)", "padding": "0 28px",
-            "display": "flex", "alignItems": "center", "justifyContent": "space-between",
-            "height": "56px",
-        }, children=[
-            html.Div(style={"display": "flex", "alignItems": "center", "gap": "14px"}, children=[
+
+# ── Login layout ──────────────────────────────────────────
+def _login_layout():
+    return html.Div(className="login-bg", children=[
+        html.Div(className="login-card", children=[
+            # Logos
+            html.Div(style={"display": "flex", "alignItems": "center",
+                            "justifyContent": "center", "gap": "16px",
+                            "marginBottom": "28px"}, children=[
                 html.Img(src="/assets/logo_disico.png",
-                         style={"height": "36px", "width": "auto"}),
-                html.Div(style={"width": "1px", "height": "28px",
+                         style={"height": "40px", "width": "auto"}),
+                html.Div(style={"width": "1px", "height": "32px",
                                 "background": C_BORDER_HI, "flexShrink": "0"}),
                 html.Img(src="/assets/SW-Disico.png",
-                         style={"height": "30px", "width": "auto"}),
+                         style={"height": "34px", "width": "auto"}),
             ]),
-            html.Span("Deteccion de Anomalias de Consumo Energetico", style={
-                "color": C_TEXT3, "fontSize": "13px", "fontFamily": _FONT}),
+            # Título
+            html.H2("Iniciar Sesión", style={
+                "textAlign": "center", "color": C_TEXT, "fontSize": "20px",
+                "fontWeight": "700", "fontFamily": _FONT, "margin": "0 0 6px 0"}),
+            html.P("Detección de Anomalías de Consumo Energético", style={
+                "textAlign": "center", "color": C_TEXT3, "fontSize": "12px",
+                "fontFamily": _FONT, "margin": "0 0 24px 0"}),
+            # Formulario
+            html.Div(children=[
+                html.Label("Usuario o correo electrónico", style={
+                    "color": C_TEXT2, "fontSize": "12px", "fontWeight": "600",
+                    "fontFamily": _FONT, "display": "block", "marginBottom": "6px"}),
+                dcc.Input(id="login-user", type="text",
+                          placeholder="usuario o correo",
+                          className="login-input",
+                          style={"width": "100%", "marginBottom": "16px"}),
+                html.Label("Contraseña", style={
+                    "color": C_TEXT2, "fontSize": "12px", "fontWeight": "600",
+                    "fontFamily": _FONT, "display": "block", "marginBottom": "6px"}),
+                dcc.Input(id="login-pass", type="password",
+                          placeholder="••••••••",
+                          className="login-input",
+                          style={"width": "100%", "marginBottom": "20px"}),
+                html.Button("Ingresar", id="login-btn", n_clicks=0,
+                            className="login-btn"),
+                html.Div(id="login-error", style={
+                    "color": C_RED, "fontSize": "12px", "fontFamily": _FONT,
+                    "textAlign": "center", "marginTop": "14px", "minHeight": "18px"}),
+            ]),
         ]),
-        # ── Contenido principal ──
-        html.Div(style={"padding": "24px 28px"}, children=[
-            dcc.Tabs(id="main_tabs", value="tab1",
-                     style={"marginBottom": "20px", "borderBottom": f"1px solid {C_BORDER}"},
-                     children=[
-                         dcc.Tab(label="Scores y Series",              value="tab1", style=TAB_STYLE, selected_style=TAB_SEL),
-                         dcc.Tab(label="Descriptivas No Supervisado",  value="tab2", style=TAB_STYLE, selected_style=TAB_SEL),
-                         dcc.Tab(label="Descriptivas Supervisado",     value="tab3", style=TAB_STYLE, selected_style=TAB_SEL),
-                         dcc.Tab(label="Metricas de los Modelos",      value="tab4", style=TAB_STYLE, selected_style=TAB_SEL),
-                     ]),
-            html.Div(id="tab_content"),
-        ]),
-    ],
-)
+        dcc.Location(id="login-redirect", refresh=True),
+    ])
+
+
+# ── Dashboard layout ─────────────────────────────────────
+def _dashboard_layout():
+    logout_link = html.A("Cerrar sesión", href="/logout", style={
+        "color": C_TEXT3, "fontSize": "12px", "fontFamily": _FONT,
+        "textDecoration": "none", "padding": "4px 12px",
+        "border": f"1px solid {C_BORDER}", "borderRadius": "6px",
+    }) if _AUTH_ENABLED else None
+
+    return html.Div(
+        style={"background": C_BG, "minHeight": "100vh", "fontFamily": _FONT},
+        children=[
+            # ── Topbar ──
+            html.Div(className="topbar", style={
+                "background": "rgba(255,255,255,0.92)", "padding": "0 28px",
+                "display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                "height": "56px",
+            }, children=[
+                html.Div(style={"display": "flex", "alignItems": "center", "gap": "14px"}, children=[
+                    html.Img(src="/assets/logo_disico.png",
+                             style={"height": "36px", "width": "auto"}),
+                    html.Div(style={"width": "1px", "height": "28px",
+                                    "background": C_BORDER_HI, "flexShrink": "0"}),
+                    html.Img(src="/assets/SW-Disico.png",
+                             style={"height": "30px", "width": "auto"}),
+                ]),
+                html.Div(style={"display": "flex", "alignItems": "center", "gap": "16px"}, children=[
+                    html.Span("Deteccion de Anomalias de Consumo Energetico", style={
+                        "color": C_TEXT3, "fontSize": "13px", "fontFamily": _FONT}),
+                    logout_link,
+                ]) if logout_link else html.Span(
+                    "Deteccion de Anomalias de Consumo Energetico", style={
+                        "color": C_TEXT3, "fontSize": "13px", "fontFamily": _FONT}),
+            ]),
+            # ── Contenido principal ──
+            html.Div(style={"padding": "24px 28px"}, children=[
+                dcc.Tabs(id="main_tabs", value="tab1",
+                         style={"marginBottom": "20px", "borderBottom": f"1px solid {C_BORDER}"},
+                         children=[
+                             dcc.Tab(label="Scores y Series",              value="tab1", style=TAB_STYLE, selected_style=TAB_SEL),
+                             dcc.Tab(label="Descriptivas No Supervisado",  value="tab2", style=TAB_STYLE, selected_style=TAB_SEL),
+                             dcc.Tab(label="Descriptivas Supervisado",     value="tab3", style=TAB_STYLE, selected_style=TAB_SEL),
+                             dcc.Tab(label="Metricas de los Modelos",      value="tab4", style=TAB_STYLE, selected_style=TAB_SEL),
+                         ]),
+                html.Div(id="tab_content"),
+            ]),
+        ],
+    )
+
+
+# ── Serve layout (login o dashboard según sesión) ────────
+def _serve_layout():
+    if _AUTH_ENABLED and "user" not in _flask_session:
+        return _login_layout()
+    return _dashboard_layout()
+
+app.layout = _serve_layout
+
+
+# ── Flask middleware: proteger rutas y manejar logout ─────
+@server.before_request
+def _auth_guard():
+    if not _AUTH_ENABLED:
+        return None
+    path = _flask_request.path
+    # Permitir assets estáticos y favicon
+    if path.startswith("/assets/") or path == "/favicon.ico":
+        return None
+    # Logout
+    if path == "/logout":
+        _flask_session.pop("user", None)
+        return _flask_redirect("/")
+    # Página principal (serve_layout decide qué mostrar)
+    if path == "/":
+        return None
+    # Permitir callbacks de login (login-btn, login-redirect)
+    if path == "/_dash-update-component":
+        try:
+            import json
+            body = _flask_request.get_data(as_text=True)
+            data = json.loads(body)
+            outputs = str(data.get("output", ""))
+            # Permitir callbacks del login
+            if "login-error" in outputs or "login-redirect" in outputs:
+                return None
+        except Exception:
+            pass
+        # Bloquear callbacks del dashboard si no autenticado
+        if "user" not in _flask_session:
+            from flask import abort
+            abort(401)
+    # Dash internal endpoints
+    if path.startswith("/_dash"):
+        if "user" not in _flask_session:
+            return _flask_redirect("/")
+        return None
+    return None
 
 # =========================================================
 # 7) CALLBACKS
 # =========================================================
+
+# ── Login callback ────────────────────────────────────────
+@app.callback(
+    Output("login-error", "children"),
+    Output("login-redirect", "href"),
+    Input("login-btn", "n_clicks"),
+    State("login-user", "value"),
+    State("login-pass", "value"),
+    prevent_initial_call=True,
+)
+def _do_login(n_clicks, user_input, password):
+    if not n_clicks or not user_input or not password:
+        raise PreventUpdate
+    ip = _flask_request.remote_addr or "unknown"
+    now = _time.time()
+    # Limpiar intentos viejos
+    _FAIL_LOG[ip] = [t for t in _FAIL_LOG[ip] if now - t < _LOCKOUT_SEC]
+    if len(_FAIL_LOG[ip]) >= _MAX_FAILS:
+        wait = int(_LOCKOUT_SEC - (now - _FAIL_LOG[ip][0]))
+        return f"Demasiados intentos. Intente en {wait}s.", no_update
+    key = user_input.strip().lower()
+    record = _AUTH_USERS.get(key)
+    if record and hmac.compare_digest(record["password"], password):
+        _flask_session["user"] = record["username"]
+        _FAIL_LOG.pop(ip, None)
+        return "", "/"
+    _FAIL_LOG[ip].append(now)
+    remaining = _MAX_FAILS - len(_FAIL_LOG[ip])
+    if remaining <= 2:
+        return f"Credenciales inválidas. {remaining} intentos restantes.", no_update
+    return "Usuario o contraseña incorrectos.", no_update
+
 
 @app.callback(Output("tab_content","children"), Input("main_tabs","value"))
 def render_tab(tab):
