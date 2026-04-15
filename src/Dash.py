@@ -22,6 +22,8 @@ FILE_UNSUP        = DATA_PATH / "top_5000_no_supervisado.xlsx"
 FILE_CONSUMO      = DATA_PATH / "consumo_011223_01062025_filtrado.parquet"
 FILE_ROC          = DATA_PATH / "informacion_curva_roc.pickle"
 FILE_GEO          = DATA_PATH / "georeferencias.csv"
+FILE_RESULTADOS_1 = DATA_PATH / "resultados_1.parquet"
+FILE_RESDF_LAST   = DATA_PATH / "resultados_df_last.csv"
 FILE_MAH_CACHE    = CACHE_PATH / "mahalanobis_cache.pkl"
 
 # =========================================================
@@ -165,25 +167,90 @@ else:
     df_geo_sup = df_geo_unsup = df_geo_raw
 del df_geo_raw; _gc.collect()
 
-# ── Mahalanobis: solo desde cache pre-computado ───────────
-# No cargar resultados_1.parquet ni resultados_df_last.csv en runtime
-# (ahorra ~1.5 GB RAM). Si no hay cache, la sección queda vacía.
-_MAH_CACHE = {}
-_mah_ids_ordered = []
-if FILE_MAH_CACHE.exists():
-    try:
-        print("[Dash] Cargando cache de Mahalanobis...", flush=True)
-        with open(FILE_MAH_CACHE, "rb") as f:
-            _MAH_CACHE = pickle.load(f)
-        _mah_ids_ordered = sorted(_MAH_CACHE.keys(),
-                                  key=lambda c: -(_MAH_CACHE[c].get("fraud_score") or 0))
-        print(f"[Dash] ✓ Cache Mahalanobis: {len(_MAH_CACHE)} clientes.", flush=True)
-    except Exception as e:
-        print(f"[Dash] ⚠ Error cargando cache Mahalanobis: {e}. Sección deshabilitada.", flush=True)
-        _MAH_CACHE = {}
-else:
-    print("[Dash] ℹ Sin cache Mahalanobis. Ejecutar scripts/precompute_mahalanobis.py para habilitar.", flush=True)
+# ── Mahalanobis ───────────────────────────────────────────
+def _compute_mahalanobis(df_r1, df_last):
+    """Calcula distancias de Mahalanobis por grupo. Retorna dict {cliente_id: info}."""
+    if df_r1.empty or df_last.empty:
+        return {}
+    GC    = ["localidad","barrio","tipo_producto","categoria","subcategoria"]
+    av_gc = [c for c in GC if c in df_r1.columns]
+    has_ym= "year_month" in df_r1.columns and "year_month" in df_last.columns
+    kc    = av_gc + (["year_month"] if has_ym else [])
+    need  = [c for c in kc+["CLIENTE_ID","consumo_prev","consumo_actual"] if c in df_r1.columns]
+    r1    = df_r1[need].copy()
+    for c in kc:
+        r1[c]      = r1[c].astype(str)
+        df_last[c] = df_last[c].astype(str)
+    r1["_gk"] = r1[kc].agg("||".join, axis=1)
+    clean     = r1.dropna(subset=["consumo_prev","consumo_actual"])
+    grouped   = {k:(g[["consumo_prev","consumo_actual"]].values, g["CLIENTE_ID"].values)
+                 for k,g in clean.groupby("_gk", sort=False)}
+    fc = "fraud_score" if "fraud_score" in df_last.columns else None
+    seen, cache = {}, {}
+    for _, row in df_last.iterrows():
+        cid = int(row["CLIENTE_ID"])
+        if cid in cache:
+            continue
+        key = "||".join(str(row[c]) for c in kc)
+        if key in seen:
+            ge = seen[key]
+        else:
+            pair = grouped.get(key)
+            if pair is None:
+                continue
+            X, ids = pair
+            if X.shape[0] < 2:
+                continue
+            mu  = X.mean(axis=0)
+            cov = np.cov(X, rowvar=False, ddof=0)
+            if np.linalg.det(cov) == 0:
+                cov += np.eye(2)*1e-6
+            inv = np.linalg.inv(cov)
+            md  = np.sqrt(((X-mu)@inv*(X-mu)).sum(axis=1))
+            ge  = {"X":X,"ids_group":ids,"mu":mu,"cov":cov,"mah_dist":md,
+                   "es_anomalo":md>2,"filter_desc":{c:row[c] for c in kc}}
+            seen[key] = ge
+        cache[cid] = {**ge, "fraud_score": float(row[fc]) if fc else None}
+    return cache
 
+def _load_mahalanobis():
+    """Intenta cargar cache, si no existe computa desde archivos de datos."""
+    # 1. Intentar cache pre-computado
+    if FILE_MAH_CACHE.exists():
+        try:
+            print("[Dash] Cargando cache de Mahalanobis...", flush=True)
+            with open(FILE_MAH_CACHE, "rb") as f:
+                cache = pickle.load(f)
+            print(f"[Dash] ✓ Cache Mahalanobis: {len(cache)} clientes.", flush=True)
+            return cache
+        except Exception as e:
+            print(f"[Dash] ⚠ Error cargando cache: {e}", flush=True)
+    # 2. Computar desde datos si existen
+    if FILE_RESULTADOS_1.exists() and FILE_RESDF_LAST.exists():
+        try:
+            print("[Dash] Computando Mahalanobis desde datos...", flush=True)
+            r1 = pd.read_parquet(FILE_RESULTADOS_1)
+            if _all_ids is not None and "CLIENTE_ID" in r1.columns:
+                r1 = r1[r1["CLIENTE_ID"].isin(_all_ids)]
+            last = pd.read_csv(FILE_RESDF_LAST)
+            if _all_ids is not None and "CLIENTE_ID" in last.columns:
+                last = last[last["CLIENTE_ID"].isin(_all_ids)]
+            for d in [r1, last]:
+                if "year_month" in d.columns:
+                    d["year_month"] = pd.to_datetime(d["year_month"], errors="coerce").dt.strftime("%Y-%m-%d")
+            cache = _compute_mahalanobis(r1, last)
+            del r1, last
+            print(f"[Dash] ✓ Mahalanobis computado: {len(cache)} clientes.", flush=True)
+            return cache
+        except Exception as e:
+            print(f"[Dash] ⚠ Error computando Mahalanobis: {e}", flush=True)
+    else:
+        print("[Dash] ℹ Sin archivos para Mahalanobis (resultados_1.parquet / resultados_df_last.csv).", flush=True)
+    return {}
+
+_MAH_CACHE = _load_mahalanobis()
+_mah_ids_ordered = sorted(_MAH_CACHE.keys(),
+                          key=lambda c: -(_MAH_CACHE[c].get("fraud_score") or 0)) if _MAH_CACHE else []
 _gc.collect()
 print("[Dash] ✓ Carga completa.", flush=True)
 
