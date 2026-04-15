@@ -610,6 +610,25 @@ tab4_layout = html.Div([
 app = Dash(__name__, suppress_callback_exceptions=True)
 app.title = "DISICO – Anomalias Energia"
 
+# Favicon personalizado
+app.index_string = '''<!DOCTYPE html>
+<html>
+<head>
+{%metas%}
+<title>{%title%}</title>
+<link rel="icon" type="image/png" href="/assets/icon-disico.png">
+{%css%}
+</head>
+<body>
+{%app_entry%}
+<footer>
+{%config%}
+{%scripts%}
+{%renderer%}
+</footer>
+</body>
+</html>'''
+
 app.layout = html.Div(
     style={"background": C_BG, "minHeight": "100vh", "fontFamily": _FONT},
     children=[
@@ -619,17 +638,16 @@ app.layout = html.Div(
             "display": "flex", "alignItems": "center", "justifyContent": "space-between",
             "height": "56px",
         }, children=[
-            html.Div(style={"display": "flex", "alignItems": "center", "gap": "12px"}, children=[
-                html.Div(className="topbar-dot"),
-                html.Span("SW DISICO", style={
-                    "color": C_NAVY_DEEP, "fontWeight": "800", "fontSize": "15px",
-                    "letterSpacing": "0.04em", "textTransform": "uppercase",
-                    "fontFamily": _FONT}),
-                html.Span("Deteccion de Anomalias de Consumo Energetico", style={
-                    "color": C_TEXT3, "fontSize": "13px", "fontFamily": _FONT,
-                    "marginLeft": "4px"}),
+            html.Div(style={"display": "flex", "alignItems": "center", "gap": "14px"}, children=[
+                html.Img(src="/assets/logo_disico.png",
+                         style={"height": "36px", "width": "auto"}),
+                html.Div(style={"width": "1px", "height": "28px",
+                                "background": C_BORDER_HI, "flexShrink": "0"}),
+                html.Img(src="/assets/SW-Disico.png",
+                         style={"height": "30px", "width": "auto"}),
             ]),
-            html.Span("v3.0", className="info-badge"),
+            html.Span("Deteccion de Anomalias de Consumo Energetico", style={
+                "color": C_TEXT3, "fontSize": "13px", "fontFamily": _FONT}),
         ]),
         # ── Contenido principal ──
         html.Div(style={"padding": "24px 28px"}, children=[
