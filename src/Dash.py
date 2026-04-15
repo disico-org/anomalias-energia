@@ -692,27 +692,31 @@ def _login_layout():
             html.P("Detección de Anomalías de Consumo Energético", style={
                 "textAlign": "center", "color": C_TEXT3, "fontSize": "12px",
                 "fontFamily": _FONT, "margin": "0 0 24px 0"}),
-            # Formulario
-            html.Div(children=[
+            # Formulario — usa dcc.Input (dash.html no expone Input)
+            # El wrapper div se hace invisible via CSS (.login-form)
+            html.Div(className="login-form", children=[
                 html.Label("Usuario o correo electrónico", style={
                     "color": C_TEXT2, "fontSize": "12px", "fontWeight": "600",
                     "fontFamily": _FONT, "display": "block", "marginBottom": "6px"}),
-                html.Input(id="login-user", type="text",
-                           placeholder="usuario o correo",
-                           className="login-field",
-                           style={"marginBottom": "16px"}),
+                dcc.Input(id="login-user", type="text",
+                          placeholder="usuario o correo",
+                          debounce=False,
+                          className="login-field"),
+                html.Div(style={"height": "16px"}),
                 html.Label("Contraseña", style={
                     "color": C_TEXT2, "fontSize": "12px", "fontWeight": "600",
                     "fontFamily": _FONT, "display": "block", "marginBottom": "6px"}),
-                html.Div(style={"position": "relative", "marginBottom": "20px"}, children=[
-                    html.Input(id="login-pass", type="password",
-                               placeholder="••••••••",
-                               className="login-field login-field--pass"),
+                html.Div(className="login-pass-wrap", children=[
+                    dcc.Input(id="login-pass", type="password",
+                              placeholder="••••••••",
+                              debounce=False,
+                              className="login-field login-field--pass"),
                     html.Button(id="toggle-pass", n_clicks=0,
                                 className="login-eye-btn",
                                 title="Mostrar/ocultar contraseña",
                                 children="👁"),
                 ]),
+                html.Div(style={"height": "20px"}),
                 html.Button("Ingresar", id="login-btn", n_clicks=0,
                             className="login-btn"),
                 html.Div(id="login-error", style={

@@ -694,23 +694,10 @@ input::placeholder {
   animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-/* dcc.Input wrapper invisible dentro del login */
-.login-form .dash-input-container {
-  display: block !important;
-  width: 100% !important;
-  border: none !important;
-  background: transparent !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* El input real dentro del wrapper */
-.login-form .login-field input,
-.login-form input.dash-input-element {
+/* Campo de input nativo del login */
+.login-field {
   display: block;
-  width: 100% !important;
+  width: 100%;
   padding: 10px 14px;
   font-size: 13px;
   font-family: var(--font);
@@ -723,23 +710,17 @@ input::placeholder {
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.login-form .login-field--pass input,
-.login-pass-wrap input.dash-input-element {
+.login-field--pass {
   padding-right: 42px;
 }
 
-.login-form input.dash-input-element:focus {
+.login-field:focus {
   border-color: var(--navy);
   box-shadow: 0 0 0 3px rgba(27,94,126,0.12);
 }
 
-.login-form input.dash-input-element::placeholder {
+.login-field::placeholder {
   color: var(--text-3);
-}
-
-/* Wrapper del campo contraseña con botón eye */
-.login-pass-wrap {
-  position: relative;
 }
 
 /* Botón ojo para contraseña */
@@ -748,7 +729,6 @@ input::placeholder {
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2;
   background: none;
   border: none;
   cursor: pointer;
