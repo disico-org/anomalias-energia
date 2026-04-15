@@ -793,14 +793,21 @@ def _auth_guard():
     # Página principal (serve_layout decide qué mostrar)
     if path == "/":
         return None
-    # Dash necesita /_dash-layout y /_dash-dependencies para renderizar
-    # cualquier página (incluido el login), así que se permiten siempre.
-    if path in ("/_dash-layout", "/_dash-dependencies"):
+    # JS/CSS de Dash y rutas necesarias para renderizar el login
+    _DASH_PUBLIC = (
+        "/_dash-component-suites/",
+        "/_dash-layout",
+        "/_dash-dependencies",
+        "/_reload-hash",
+        "/_dash-error",
+    )
+    if any(path.startswith(p) if p.endswith("/") else path == p
+           for p in _DASH_PUBLIC):
         return None
-    # Permitir callbacks de login (login-btn, login-redirect)
+    # Bloquear callbacks del dashboard si no autenticado
     if path == "/_dash-update-component":
         if "user" in _flask_session:
-            return None  # autenticado → todo permitido
+            return None
         try:
             import json
             body = _flask_request.get_data(as_text=True)
@@ -812,7 +819,7 @@ def _auth_guard():
             pass
         from flask import abort
         abort(401)
-    # Otros endpoints internos de Dash
+    # Otros endpoints internos de Dash → redirigir a login si no autenticado
     if path.startswith("/_dash"):
         if "user" not in _flask_session:
             return _flask_redirect("/")
