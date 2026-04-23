@@ -662,21 +662,57 @@ app.index_string = '''<!DOCTYPE html>
 /* ===== ESTILOS GLOBALES ===== */
 
 /* Dropdowns: z-index alto para que aparezcan encima de todo */
-.Select-menu-outer {
-    z-index: 9999 !important;
-}
-.Select-dropdown {
-    z-index: 9999 !important;
-}
+
+/* Dropdowns antiguos (react-select) */
+.Select-menu-outer,
+.Select-dropdown,
 .dash-dropdown .Select-menu-outer {
-    z-index: 9999 !important;
+    z-index: 99999 !important;
 }
-/* Asegurar que el contenedor del dropdown también tenga z-index */
 .Select {
     z-index: auto !important;
 }
 .Select.is-open {
-    z-index: 9998 !important;
+    z-index: 99998 !important;
+}
+
+/* Dropdowns nuevos (radix-based) */
+.dash-dropdown-wrapper {
+    position: relative !important;
+    z-index: auto !important;
+}
+
+/* El menú desplegable de radix se renderiza en un portal */
+[data-radix-popper-content-wrapper] {
+    z-index: 99999 !important;
+}
+
+/* Contenedor del menú desplegable */
+[role="listbox"] {
+    z-index: 99999 !important;
+}
+
+/* Controles row necesita z-index para el contexto de apilamiento */
+.controls-row {
+    position: relative !important;
+    z-index: 100 !important;
+}
+
+/* Cuando el dropdown está abierto, elevar su wrapper */
+.dash-dropdown-wrapper:has([aria-expanded="true"]) {
+    z-index: 99998 !important;
+}
+
+/* El botón del dropdown cuando está expandido */
+.dash-dropdown[aria-expanded="true"] {
+    z-index: 99998 !important;
+}
+
+/* Forzar que todos los elementos del dropdown estén por encima */
+.dash-dropdown-menu,
+.dash-dropdown-options,
+.dash-dropdown-option {
+    z-index: 99999 !important;
 }
 
 /* ===== ESTILOS RESPONSIVE ===== */
@@ -686,6 +722,22 @@ app.index_string = '''<!DOCTYPE html>
     .header-subtitle {
         display: none !important;
     }
+}
+
+/* Asegurar que las cajas no creen contexto de apilamiento alto */
+.two-col,
+.grid-3,
+.grid-2x2,
+.map-kpi-row,
+.disico-card {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Las cajas de controles deben tener z-index mayor */
+.controls-row {
+    position: relative !important;
+    z-index: 100 !important;
 }
 
 /* Grids: en móvil apilar todo verticalmente */
