@@ -659,6 +659,26 @@ app.index_string = '''<!DOCTYPE html>
 <title>{%title%}</title>
 <link rel="icon" type="image/png" href="/assets/icon-disico.png">
 <style>
+/* ===== ESTILOS GLOBALES ===== */
+
+/* Dropdowns: z-index alto para que aparezcan encima de todo */
+.Select-menu-outer {
+    z-index: 9999 !important;
+}
+.Select-dropdown {
+    z-index: 9999 !important;
+}
+.dash-dropdown .Select-menu-outer {
+    z-index: 9999 !important;
+}
+/* Asegurar que el contenedor del dropdown también tenga z-index */
+.Select {
+    z-index: auto !important;
+}
+.Select.is-open {
+    z-index: 9998 !important;
+}
+
 /* ===== ESTILOS RESPONSIVE ===== */
 
 /* Ocultar texto del header en móvil */
