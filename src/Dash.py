@@ -650,13 +650,21 @@ app.title = "DISICO – Anomalias Energia"
 server = app.server
 server.secret_key = os.environ.get("SECRET_KEY", "dev-key-cambiar-en-produccion")
 
-# Favicon personalizado
+# Favicon personalizado + CSS responsive
 app.index_string = '''<!DOCTYPE html>
 <html>
 <head>
 {%metas%}
 <title>{%title%}</title>
 <link rel="icon" type="image/png" href="/assets/icon-disico.png">
+<style>
+/* Ocultar texto del header en móvil (pantallas menores a 768px) */
+@media (max-width: 768px) {
+    .header-subtitle {
+        display: none !important;
+    }
+}
+</style>
 {%css%}
 </head>
 <body>
@@ -754,11 +762,11 @@ def _dashboard_layout():
                              style={"height": "30px", "width": "auto"}),
                 ]),
                 html.Div(style={"display": "flex", "alignItems": "center", "gap": "16px"}, children=[
-                    html.Span("Deteccion de Anomalias de Consumo Energetico", style={
+                    html.Span("Deteccion de Anomalias de Consumo Energetico", className="header-subtitle", style={
                         "color": C_TEXT3, "fontSize": "13px", "fontFamily": _FONT}),
                     logout_link,
                 ]) if logout_link else html.Span(
-                    "Deteccion de Anomalias de Consumo Energetico", style={
+                    "Deteccion de Anomalias de Consumo Energetico", className="header-subtitle", style={
                         "color": C_TEXT3, "fontSize": "13px", "fontFamily": _FONT}),
             ]),
             # ── Contenido principal ──
