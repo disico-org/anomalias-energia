@@ -655,13 +655,119 @@ app.index_string = '''<!DOCTYPE html>
 <html>
 <head>
 {%metas%}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{%title%}</title>
 <link rel="icon" type="image/png" href="/assets/icon-disico.png">
 <style>
-/* Ocultar texto del header en móvil (pantallas menores a 768px) */
+/* ===== ESTILOS RESPONSIVE ===== */
+
+/* Ocultar texto del header en móvil */
 @media (max-width: 768px) {
     .header-subtitle {
         display: none !important;
+    }
+}
+
+/* Grids: en móvil apilar todo verticalmente */
+@media (max-width: 768px) {
+    /* Dos columnas (tablas) -> 1 columna */
+    .two-col {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+    .two-col > div {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+    }
+    
+    /* Grid de 3 columnas (métricas) -> 1 columna */
+    .grid-3 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+    .grid-3 > div {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* Grid 2x2 -> 1 columna */
+    .grid-2x2 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+        grid-template-columns: 1fr !important;
+    }
+    .grid-2x2 > div {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* Fila de mapa + KPIs -> apilar */
+    .map-kpi-row {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+    .map-kpi-row > div {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+    }
+    .map-col, .kpi-col {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+    
+    /* Controles: apilar en móvil */
+    .controls-row {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        align-items: stretch !important;
+    }
+    .controls-row > div {
+        width: 100% !important;
+    }
+    .controls-row input, .controls-row .Select {
+        width: 100% !important;
+    }
+    
+    /* Tablas: permitir scroll horizontal */
+    .dash-table-container {
+        overflow-x: auto !important;
+    }
+    
+    /* Reducir padding en móvil */
+    .disico-card {
+        padding: 16px !important;
+    }
+    
+    /* Contenedor principal */
+    #tab_content {
+        padding: 12px !important;
+    }
+    
+    /* Gráficos: altura adaptativa */
+    .js-plotly-plot {
+        height: auto !important;
+        min-height: 300px !important;
+    }
+}
+
+/* Tablets: 2 columnas */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .grid-3 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .grid-2x2 {
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 </style>
